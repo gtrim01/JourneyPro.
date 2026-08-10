@@ -24,7 +24,7 @@ if (typeof window !== "undefined" && !window.storage) {
 }
 
 /* ============================================================
-   JourneyPro — Prototype v0.7
+   JourneyPro — Prototype v0.8 (installable release)
    · Lay nights at any stop (budget + ~40 km/day local fuel)
    · Places grouped by state (no Adelaide-centric labels)
    · 12 new stops: Hume corridor, Broken Hill run, Devils
@@ -1044,7 +1044,7 @@ export default function JourneyPro() {
           </div>
           <span className="jp-display text-sm font-semibold tracking-widest uppercase px-3 py-1 rounded-md"
                 style={{ background: "var(--amber)", color: "var(--ink)" }}>
-            Prototype v0.7
+            Prototype v0.8
           </span>
         </div>
       </header>
