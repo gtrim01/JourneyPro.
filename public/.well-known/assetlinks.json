@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.innovativeapps.journeypro",
+        "sha256_cert_fingerprints": ["59:2B:89:C0:0B:8A:E7:0F:9D:1C:7B:C3:D9:BF:F7:20:FE:4E:D6:05:90:65:29:8F:72:E6:C5:8B:5F:24:79:8C"]
+      }
+    }]
