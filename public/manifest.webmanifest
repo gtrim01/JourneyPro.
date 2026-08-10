@@ -1,0 +1,16 @@
+{
+  "name": "JourneyPro — Know the trip before you tow it",
+  "short_name": "JourneyPro",
+  "description": "Rig-aware fuel costs, roadhouse fill plans, stop guides and whole-trip budgets for Australian caravan & 4WD tourers.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F5F4EE",
+  "theme_color": "#00674F",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
