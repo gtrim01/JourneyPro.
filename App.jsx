@@ -24,18 +24,18 @@ if (typeof window !== "undefined" && !window.storage) {
 }
 
 /* ============================================================
-   JourneyPro — Prototype v0.16 (Trip Story)
-   · One tap turns any trip into a shareable branded card:
-     your route drawn across Australia, the big diesel figure,
-     distance / fuel / fill-ups / days, your rig, and the
-     JourneyPro tagline — sized for Facebook (1080×1350)
-   · Share straight to the phone's share sheet where supported,
-     or download the PNG; button lives on the trip sheet and
-     in Travel Mode
-   · Fixes: Travel Mode day chip now tracks your PLAN day and
-     advances as you tick off stops; Stop guide button scrolls
-     you to the opened guide
-   · Plus everything from v0.15
+   JourneyPro — Prototype v0.17 (the card, done properly)
+   · Trip Story redesigned around one hero: the map now ZOOMS
+     to your route's own shape instead of drowning it in the
+     national network; disciplined spacing bands, legible
+     sign-green stat labels (the old ones were colliding with
+     the amber strip), rig line with the diamond motif, day
+     pill, nothing touching an edge
+   · Travel Mode scrubber: the bar is now a slider — drag to
+     any stop on the trip to see its leg, fuel, weather and
+     guide; "Back to today" returns to the live position,
+     "I'm here now" moves the trip to wherever you slid
+   · Plus everything from v0.16
    Curated prototype dataset — figures are realistic estimates
    ============================================================ */
 
@@ -1695,6 +1695,7 @@ export default function JourneyPro() {
   const [stays, setStays] = useState({});
   const [tripMarks, setTripMarks] = useState(null);
   const [travel, setTravel] = useState(null); /* { active, startedISO, pos, wp, stays, marks } */
+  const [travelView, setTravelView] = useState(null); /* stop index being browsed; null = follow the trip */
 
   const make = VEHICLE_DATA[makeIdx];
   const model = make.models[Math.min(modelIdx, make.models.length - 1)];
@@ -1871,18 +1872,18 @@ export default function JourneyPro() {
     try {
       try {
         await Promise.all([
-          document.fonts.load('700 72px "Barlow Condensed"'),
+          document.fonts.load('700 76px "Barlow Condensed"'),
           document.fonts.load('600 44px "IBM Plex Mono"'),
-          document.fonts.load('400 30px "Archivo"'),
+          document.fonts.load('400 27px "Archivo"'),
         ]);
-      } catch (e) { /* fall back to system fonts */ }
+      } catch (e) { /* system fonts will do */ }
 
       const W = 1080, H = 1350;
       const cv = document.createElement("canvas");
       cv.width = W; cv.height = H;
       const c = cv.getContext("2d");
       const SIGN = "#00674F", AMBER = "#F5B301", INK = "#21262A",
-            PAPER = "#F5F4EE", MUTED = "#6B7069", LINE = "#DDDCD2", RED = "#C03B2B";
+            PAPER = "#F5F4EE", LINE = "#DDDCD2", RED = "#C03B2B";
       const BC = '"Barlow Condensed", sans-serif';
       const Mono = '"IBM Plex Mono", monospace';
       const Arc = '"Archivo", system-ui, sans-serif';
@@ -1895,56 +1896,75 @@ export default function JourneyPro() {
         c.arcTo(x, y, x + w, y, r);
         c.closePath();
       };
+      const fit = (text, max) => {
+        let t = text;
+        while (c.measureText(t).width > max && t.length > 4) t = t.slice(0, -2).trimEnd() + "…";
+        return t;
+      };
 
-      /* paper */
       c.fillStyle = PAPER; c.fillRect(0, 0, W, H);
 
-      /* green sign header */
-      rr(40, 40, 1000, 310, 26); c.fillStyle = SIGN; c.fill();
-      rr(52, 52, 976, 286, 18); c.strokeStyle = "rgba(255,255,255,0.5)"; c.lineWidth = 3; c.stroke();
-      c.textBaseline = "alphabetic";
+      /* ---- header sign ---- */
+      rr(40, 40, 1000, 296, 26); c.fillStyle = SIGN; c.fill();
+      rr(52, 52, 976, 272, 18); c.strokeStyle = "rgba(255,255,255,0.5)"; c.lineWidth = 3; c.stroke();
       c.font = "700 44px " + BC;
       c.fillStyle = "#FFFFFF"; c.fillText("JOURNEY", 84, 118);
       c.fillStyle = AMBER; c.fillText("PRO", 84 + c.measureText("JOURNEY").width, 118);
-      c.font = "400 24px " + Mono; c.fillStyle = "rgba(255,255,255,0.75)";
+      c.font = "400 23px " + Mono; c.fillStyle = "rgba(255,255,255,0.75)";
       const url = "journey-pro-jet.vercel.app";
-      c.fillText(url, 996 - c.measureText(url).width, 114);
-
-      const title = startId === endId
-        ? "Loop from " + NODES[startId].n
-        : NODES[startId].n + " → " + NODES[endId].n;
+      c.fillText(url, 996 - c.measureText(url).width, 112);
+      const title = startId === endId ? "Loop from " + NODES[startId].n
+                                      : NODES[startId].n + " → " + NODES[endId].n;
       let tSize = 76;
       c.font = "700 " + tSize + "px " + BC;
-      while (c.measureText(title).width > 912 && tSize > 34) {
-        tSize -= 4; c.font = "700 " + tSize + "px " + BC;
-      }
-      c.fillStyle = "#FFFFFF"; c.fillText(title, 84, 230);
+      while (c.measureText(title).width > 900 && tSize > 34) { tSize -= 4; c.font = "700 " + tSize + "px " + BC; }
+      c.fillStyle = "#FFFFFF"; c.fillText(title, 84, 226);
       const statesN = new Set(route.stops.map((id) => NODES[id].st)).size;
-      const ferry = route.segs.some((s) => s.t === "y");
+      const hasFerry = route.segs.some((s) => s.t === "y");
       const dirtKm = route.segs.reduce((a, s) => a + (s.t === "u" ? s.km : 0), 0);
-      c.font = "600 30px " + BC; c.fillStyle = "rgba(255,255,255,0.9)";
-      c.fillText(
-        "~" + plan.days + " driving days · " + statesN + (statesN === 1 ? " state" : " states & territories") +
-        (ferry ? " · ferry crossing" : "") + (dirtKm > 0 ? " · " + fmt(dirtKm) + " km dirt" : ""),
-        84, 296
-      );
+      c.font = "600 27px " + BC; c.fillStyle = "rgba(255,255,255,0.88)";
+      c.fillText("~" + plan.days + " driving days · " + statesN +
+        (statesN === 1 ? " state" : " states & territories") +
+        (hasFerry ? " · ferry crossing" : "") + (dirtKm > 0 ? " · " + fmt(dirtKm) + " km dirt" : ""), 84, 288);
 
-      /* route sketch */
-      const mx = 60, my = 392, sc = 960 / SK_W; /* 640→960 wide, 470→705 tall */
-      const P = (id) => [mx + SKETCH_PTS[id][0] * sc, my + SKETCH_PTS[id][1] * sc];
+      /* ---- the hero: your route, zoomed to its own shape ---- */
+      const px = 60, py = 376, pw = 960, ph = 568, ip = 34;
+      c.save();
+      c.shadowColor = "rgba(33,38,42,0.15)"; c.shadowBlur = 22; c.shadowOffsetY = 8;
+      rr(px, py, pw, ph, 20); c.fillStyle = "#FFFFFF"; c.fill();
+      c.restore();
+      rr(px, py, pw, ph, 20); c.strokeStyle = LINE; c.lineWidth = 2.5; c.stroke();
+
+      const stops = route.stops, segs = route.segs;
+      let bx0 = 1e9, by0 = 1e9, bx1 = -1e9, by1 = -1e9;
+      stops.forEach((id) => {
+        const [x, y] = SKETCH_PTS[id];
+        bx0 = Math.min(bx0, x); by0 = Math.min(by0, y);
+        bx1 = Math.max(bx1, x); by1 = Math.max(by1, y);
+      });
+      const bpad = 24;
+      bx0 -= bpad; by0 -= bpad; bx1 += bpad; by1 += bpad;
+      const spanX = Math.max(bx1 - bx0, SK_W * 0.30), spanY = Math.max(by1 - by0, SK_H * 0.30);
+      const bcx = (bx0 + bx1) / 2, bcy = (by0 + by1) / 2;
+      const ox0 = Math.max(0, Math.min(SK_W - spanX, bcx - spanX / 2));
+      const oy0 = Math.max(0, Math.min(SK_H - spanY, bcy - spanY / 2));
+      const iw = pw - ip * 2, ih = ph - ip * 2;
+      const sc = Math.min(iw / spanX, ih / spanY);
+      const offx = px + ip + (iw - spanX * sc) / 2, offy = py + ip + (ih - spanY * sc) / 2;
+      const T = (id) => [offx + (SKETCH_PTS[id][0] - ox0) * sc, offy + (SKETCH_PTS[id][1] - oy0) * sc];
+
+      c.save(); rr(px, py, pw, ph, 20); c.clip();
       c.lineCap = "round"; c.lineJoin = "round";
       c.strokeStyle = "#CFCEC2"; c.lineWidth = 2.2; c.setLineDash([6, 7]);
       EDGES.forEach(([a, b]) => {
-        const pa = P(a), pb = P(b);
-        c.beginPath(); c.moveTo(pa[0], pa[1]); c.lineTo(pb[0], pb[1]); c.stroke();
+        const A = T(a), B = T(b);
+        c.beginPath(); c.moveTo(A[0], A[1]); c.lineTo(B[0], B[1]); c.stroke();
       });
       c.setLineDash([]);
-      /* route runs: mirror the sketch's road / ferry / dirt / positioning styling */
-      const stops = route.stops, segs = route.segs;
       const sIdx = tripMarks ? stops.indexOf(tripMarks.start) : -1;
       const eIdx = tripMarks ? stops.lastIndexOf(tripMarks.end) : -1;
-      const hasMarks = sIdx >= 0 && eIdx >= 0;
-      const posOf = (i) => hasMarks && (i < sIdx || i >= eIdx);
+      const hasMk = sIdx >= 0 && eIdx >= 0;
+      const posOf = (i) => hasMk && (i < sIdx || i >= eIdx);
       const keyOf = (s, i) => (s.t === "y" ? "ferry" : s.t === "u" ? "dirt" : "road") + (posOf(i) ? "-pos" : "");
       const runs = [];
       let cur = [stops[0]], curKind = keyOf(segs[0], 0);
@@ -1954,32 +1974,32 @@ export default function JourneyPro() {
         cur.push(nxt);
       });
       if (cur.length > 1) runs.push({ ids: cur, kind: curKind });
-      const path = (ids) => {
+      const tracePath = (ids) => {
         c.beginPath();
-        ids.forEach((id, i) => { const p = P(id); i === 0 ? c.moveTo(p[0], p[1]) : c.lineTo(p[0], p[1]); });
+        ids.forEach((id, i) => { const p = T(id); i === 0 ? c.moveTo(p[0], p[1]) : c.lineTo(p[0], p[1]); });
       };
       runs.forEach((r) => {
         const pos = r.kind.endsWith("-pos"), surf = r.kind.replace("-pos", "");
         if (surf === "ferry") {
           c.strokeStyle = SIGN; c.lineWidth = 3.5; c.setLineDash([9, 10]);
-          c.globalAlpha = pos ? 0.6 : 0.95; path(r.ids); c.stroke();
+          c.globalAlpha = pos ? 0.6 : 0.95; tracePath(r.ids); c.stroke();
         } else if (surf === "dirt") {
           c.setLineDash([]); c.strokeStyle = INK; c.lineWidth = 8; c.globalAlpha = pos ? 0.5 : 0.95;
-          path(r.ids); c.stroke();
-          c.strokeStyle = AMBER; c.lineWidth = 4.5; c.setLineDash([14, 10]); path(r.ids); c.stroke();
+          tracePath(r.ids); c.stroke();
+          c.strokeStyle = AMBER; c.lineWidth = 4.5; c.setLineDash([14, 10]); tracePath(r.ids); c.stroke();
         } else if (pos) {
           c.setLineDash([]); c.strokeStyle = SIGN; c.globalAlpha = 0.45; c.lineWidth = 4;
-          path(r.ids); c.stroke();
+          tracePath(r.ids); c.stroke();
         } else {
           c.setLineDash([]); c.globalAlpha = 1;
-          c.strokeStyle = "#FFFFFF"; c.lineWidth = 9.5; path(r.ids); c.stroke();
-          c.strokeStyle = SIGN; c.lineWidth = 5.5; path(r.ids); c.stroke();
+          c.strokeStyle = "#FFFFFF"; c.lineWidth = 9.5; tracePath(r.ids); c.stroke();
+          c.strokeStyle = SIGN; c.lineWidth = 5.5; tracePath(r.ids); c.stroke();
         }
         c.globalAlpha = 1; c.setLineDash([]);
       });
       const onRoute = new Set(stops);
       Object.keys(SKETCH_PTS).forEach((id) => {
-        const [x, y] = P(id);
+        const [x, y] = T(id);
         if (waypoints.includes(id)) {
           const isStart = tripMarks && onRoute.has(id) && tripMarks.start === id;
           c.save(); c.translate(x, y); c.rotate(Math.PI / 4);
@@ -1998,50 +2018,65 @@ export default function JourneyPro() {
           c.fillStyle = "#C4C3B6"; c.fill();
         }
       });
+      c.restore();
 
-      /* hero fuel figure on amber */
+      /* ---- amber hero figure ---- */
       const fuelCost = Math.round(Object.values(plan.fills).reduce((a, f) => a + (f.cost || 0), 0));
-      rr(60, 1108, 960, 104, 18); c.fillStyle = AMBER; c.fill();
-      c.strokeStyle = INK; c.lineWidth = 3; rr(60, 1108, 960, 104, 18); c.stroke();
-      c.fillStyle = INK; c.font = "700 62px " + BC;
-      const hero = "$" + fmt(fuelCost) + " in " + FUEL_META[vehicle.fuel].label.toLowerCase();
-      c.fillText(hero, 92, 1180);
-      c.font = "600 26px " + BC;
+      rr(60, 984, 960, 102, 18); c.fillStyle = AMBER; c.fill();
+      c.strokeStyle = INK; c.lineWidth = 3; rr(60, 984, 960, 102, 18); c.stroke();
+      c.fillStyle = INK; c.font = "700 54px " + BC;
+      c.fillText("$" + fmt(fuelCost) + " in " + FUEL_META[vehicle.fuel].label.toLowerCase(), 96, 1052);
+      c.font = "600 23px " + BC;
       const heroSub = "at the pump, hitched";
-      c.fillText(heroSub, 988 - c.measureText(heroSub).width, 1176);
+      c.fillText(heroSub, 984 - c.measureText(heroSub).width, 1046);
 
-      /* stat row */
-      const statY = 1256;
-      const stat = (x, label, value) => {
-        c.font = "600 22px " + BC; c.fillStyle = MUTED;
-        try { c.letterSpacing = "3px"; } catch (e) {}
-        c.fillText(label.toUpperCase(), x, statY - 44);
+      /* ---- stat band ---- */
+      c.textAlign = "center";
+      const statCol = (x, label, value) => {
+        c.font = "700 23px " + BC; c.fillStyle = SIGN;
+        try { c.letterSpacing = "2px"; } catch (e) {}
+        c.fillText(label, x, 1162);
         try { c.letterSpacing = "0px"; } catch (e) {}
-        c.font = "600 40px " + Mono; c.fillStyle = INK;
-        c.fillText(value, x, statY);
+        c.font = "600 43px " + Mono; c.fillStyle = INK;
+        c.fillText(value, x, 1212);
       };
-      stat(92, "Distance", fmt(plan.km) + " km");
-      stat(372, "Fuel", Math.round(plan.litres) + " L");
-      stat(608, "Fill-ups", String(Object.keys(plan.fills).length));
-      stat(800, "Days", "~" + plan.days);
+      statCol(180, "DISTANCE", fmt(plan.km) + " km");
+      statCol(420, "FUEL", Math.round(plan.litres) + " L");
+      statCol(660, "FILL-UPS", String(Object.keys(plan.fills).length));
+      statCol(900, "DAYS", "~" + plan.days);
+      c.textAlign = "left";
+      c.strokeStyle = LINE; c.lineWidth = 1.5;
+      [300, 540, 780].forEach((rx) => {
+        c.beginPath(); c.moveTo(rx, 1132); c.lineTo(rx, 1224); c.stroke();
+      });
 
-      /* rig + footer */
-      const rig = (vehMode === "custom" ? vehicle.v : make.make + " " + model.model) +
+      /* ---- rig line + day pill ---- */
+      c.save(); c.translate(98, 1258); c.rotate(Math.PI / 4);
+      c.fillStyle = AMBER; c.strokeStyle = INK; c.lineWidth = 2;
+      c.fillRect(-6, -6, 12, 12); c.strokeRect(-6, -6, 12, 12);
+      c.restore();
+      const rigRaw = (vehMode === "custom" ? vehicle.v : make.make + " " + model.model) +
         (load.weight > 0 ? "  +  " + load.desc + (load.sub ? " · " + load.sub : "") : "");
-      c.font = "400 27px " + Arc; c.fillStyle = INK;
-      c.fillText("🚙 " + rig, 92, 1300);
+      c.font = "400 26px " + Arc; c.fillStyle = INK;
+      c.fillText(fit(rigRaw, travel ? 640 : 860), 118, 1268);
       if (travel) {
+        const tStops = stops.length;
         let kd = 0, kt = 0;
-        segs.forEach((s, i) => { if (s.t !== "y") { kt += s.km; if (i < Math.min(travel.pos, stops.length) - 1) kd += s.km; } });
+        segs.forEach((s, i) => { if (s.t !== "y") { kt += s.km; if (i < Math.min(travel.pos, tStops) - 1) kd += s.km; } });
         const pc = kt > 0 ? Math.round((kd / kt) * 100) : 0;
-        const dayN = plan.dayAt[Math.max(0, Math.min(travel.pos, stops.length) - 1)] || 1;
-        const chip = "Day " + dayN + " · " + pc + "% done";
-        c.font = "700 27px " + BC; c.fillStyle = SIGN;
-        c.fillText(chip, 988 - c.measureText(chip).width, 1300);
+        const dayN = plan.dayAt[Math.max(0, Math.min(travel.pos, tStops) - 1)] || 1;
+        c.font = "700 23px " + BC;
+        const chip = "Day " + dayN + " · " + pc + "%";
+        const cw = c.measureText(chip).width + 40;
+        rr(988 - cw, 1238, cw, 40, 20); c.fillStyle = AMBER; c.fill();
+        c.strokeStyle = INK; c.lineWidth = 2; rr(988 - cw, 1238, cw, 40, 20); c.stroke();
+        c.fillStyle = INK; c.fillText(chip, 988 - cw + 20, 1266);
       }
-      c.font = "700 30px " + BC; c.fillStyle = SIGN;
+
+      /* ---- tagline ---- */
+      c.font = "700 31px " + BC; c.fillStyle = SIGN;
       const tag = "Plan the trip before you tow.";
-      c.fillText(tag, (W - c.measureText(tag).width) / 2, 1338);
+      c.fillText(tag, (W - c.measureText(tag).width) / 2, 1324);
 
       setStory(cv.toDataURL("image/png"));
     } finally {
@@ -2105,15 +2140,15 @@ export default function JourneyPro() {
       stays: { ...stays },
       marks: tripMarks,
     };
-    setTravel(t); persistTravel(t);
+    setTravel(t); persistTravel(t); setTravelView(null);
   };
   const travelStep = (dir) => {
     if (!travel) return;
     const pos = Math.max(1, Math.min(route.stops.length, travel.pos + dir));
     const t = { ...travel, pos };
-    setTravel(t); persistTravel(t);
+    setTravel(t); persistTravel(t); setTravelView(null);
   };
-  const endTravel = () => { setTravel(null); persistTravel(null); };
+  const endTravel = () => { setTravel(null); persistTravel(null); setTravelView(null); };
 
   const loadSuggested = (stops, staysObj = {}, marks = null) => {
     setWaypoints(stops.filter((id) => NODES[id]));
@@ -2250,47 +2285,72 @@ export default function JourneyPro() {
   const travelCard = travel && route.segs.length > 0 ? (() => {
     const stops = route.stops, segs = route.segs;
     const tpos = Math.min(travel.pos, stops.length);
-    const doneAll = tpos >= stops.length;
-    const nextId = doneAll ? stops[stops.length - 1] : stops[tpos];
-    const prevId = stops[Math.max(0, tpos - 1)];
-    const leg = doneAll ? null : segs[tpos - 1];
-    const legL = leg && leg.t !== "y" ? (leg.km * vehicle.real * load.factor * TERR[leg.t]) / 100 : 0;
-    const hereIdx = Math.max(0, Math.min(tpos, stops.length) - 1);
-    const dayN = plan.dayAt[hereIdx] || 1; /* plan day at the stop you've reached */
+    const liveDone = tpos >= stops.length;
+    const maxIdx = stops.length - 1;
+    const liveIdx = Math.min(tpos, maxIdx);
+    const v = travelView == null ? liveIdx : Math.max(0, Math.min(maxIdx, travelView));
+    const browsing = travelView != null && v !== liveIdx;
+    const vId = stops[v];
+    const inLeg = v > 0 ? segs[v - 1] : null;
+    const legL = inLeg && inLeg.t !== "y" ? (inLeg.km * vehicle.real * load.factor * TERR[inLeg.t]) / 100 : 0;
+    const hereIdx = Math.max(0, tpos - 1);
+    const dayN = plan.dayAt[hereIdx] || 1;
     let kmDone = 0, kmTotal = 0;
     segs.forEach((s, i) => { if (s.t !== "y") { kmTotal += s.km; if (i < tpos - 1) kmDone += s.km; } });
     const pct = kmTotal > 0 ? Math.round((kmDone / kmTotal) * 100) : 0;
+    const fillHere = plan.fills[vId];
     let fillIdx = -1;
-    for (let j = tpos; j < stops.length; j++) { if (plan.fills[stops[j]]) { fillIdx = j; break; } }
+    for (let j = v + 1; j < stops.length; j++) { if (plan.fills[stops[j]]) { fillIdx = j; break; } }
     let fillKm = 0;
-    if (fillIdx >= 0) for (let j = tpos - 1; j < fillIdx; j++) { if (segs[j] && segs[j].t !== "y") fillKm += segs[j].km; }
-    const fill = fillIdx >= 0 ? plan.fills[stops[fillIdx]] : null;
-    const layN = !doneAll ? Math.max(0, Number(stays[nextId]) || 0) : 0;
-    const w = wx.byId[nextId];
+    if (fillIdx >= 0) for (let j = v; j < fillIdx; j++) { if (segs[j] && segs[j].t !== "y") fillKm += segs[j].km; }
+    const nextFill = fillIdx >= 0 ? plan.fills[stops[fillIdx]] : null;
+    const layN = Math.max(0, Number(stays[vId]) || 0);
+    const w = wx.byId[vId];
+    const scrollToGuide = () => {
+      setOpenIdx(v);
+      if (typeof document !== "undefined") {
+        setTimeout(() => {
+          const el = document.getElementById("jp-stop-" + v);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 80);
+      }
+    };
     return (
       <div className="jp-card p-5 jp-travelcard">
         <div className="flex items-center justify-between gap-2 mb-2">
           <span className="jp-eyebrow">🚐 Travel Mode</span>
           <span className="jp-chip jp-mono">Day {dayN} of ~{plan.days}</span>
         </div>
-        {doneAll ? (
+
+        {liveDone && !browsing ? (
           <>
-            <p className="jp-travelbig">Trip complete — {NODES[nextId].n} 🎉</p>
+            <p className="jp-travelbig">Trip complete — {NODES[stops[maxIdx]].n} 🎉</p>
             <p className="jp-note mb-2">{fmt(kmTotal)} km towed. Go on, tell the group.</p>
           </>
         ) : (
           <>
-            <p className="jp-note mb-1">Leaving {NODES[prevId].n} — next stop:</p>
-            <p className="jp-travelbig">{NODES[nextId].n}</p>
+            <p className="jp-note mb-1">
+              {browsing
+                ? (v < hereIdx ? "Looking back — stop " : "Looking ahead — stop ") + (v + 1) + " of " + stops.length + ":"
+                : v === 0
+                  ? "Trip start:"
+                  : "Leaving " + NODES[stops[v - 1]].n + " — next stop:"}
+            </p>
+            <p className="jp-travelbig">{NODES[vId].n}</p>
             <p className="flex flex-wrap items-center gap-2 mb-2">
-              {leg && leg.t === "y" ? (
-                <span className="jp-chip">⛴️ Spirit of Tasmania crossing — no driving today</span>
+              {inLeg ? (
+                inLeg.t === "y" ? (
+                  <span className="jp-chip">⛴️ Spirit of Tasmania crossing — no driving that day</span>
+                ) : (
+                  <span className="jp-chip jp-mono">{fmt(inLeg.km)} km in · ~{Math.round(legL)} L</span>
+                )
               ) : (
-                <span className="jp-chip jp-mono">{leg ? fmt(leg.km) : 0} km · ~{Math.round(legL)} L</span>
+                <span className="jp-chip">Where it all begins</span>
               )}
-              {leg && leg.t === "u" && (
+              {inLeg && inLeg.t === "u" && (
                 <span className="jp-chip jp-mono" style={{ color: "var(--red)", borderColor: "var(--red)" }}>unsealed</span>
               )}
+              {browsing && <span className="jp-chip jp-mono">plan day {plan.dayAt[v]}</span>}
               {layN > 0 && <span className="jp-chip">🌙 {layN} {layN === 1 ? "night" : "nights"} here</span>}
               {w && <span className="jp-chip jp-mono">{wxInfo(w.code).e} {Math.round(w.tmax)}°</span>}
               {w && w.wind >= 40 && (
@@ -2298,54 +2358,60 @@ export default function JourneyPro() {
                   💨 wind to {Math.round(w.wind)} km/h — take care towing
                 </span>
               )}
-              {!NODES[nextId].f && (
-                <span className="jp-chip" style={{ color: "var(--red)", borderColor: "var(--red)" }}>No fuel there</span>
+              {!NODES[vId].f && (
+                <span className="jp-chip" style={{ color: "var(--red)", borderColor: "var(--red)" }}>No fuel here</span>
               )}
             </p>
             <p className="jp-note mb-2">
-              {fill ? (
-                <>⛽ Next fill-up: <strong>{NODES[stops[fillIdx]].n}</strong> — {fmt(fillKm)} km away,
-                {" "}~{Math.round(fill.litres)} L{fill.cost ? " (~$" + Math.round(fill.cost) + ")" : ""}.</>
+              {fillHere ? (
+                <>⛽ Fill-up here — ~{Math.round(fillHere.litres)} L{fillHere.cost ? " (~$" + Math.round(fillHere.cost) + ")" : ""}.</>
+              ) : nextFill ? (
+                <>⛽ Next fill-up after here: <strong>{NODES[stops[fillIdx]].n}</strong> — {fmt(fillKm)} km on,
+                {" "}~{Math.round(nextFill.litres)} L{nextFill.cost ? " (~$" + Math.round(nextFill.cost) + ")" : ""}.</>
               ) : (
-                <>⛽ No more fill-ups needed this trip.</>
+                <>⛽ No more fill-ups needed from here.</>
               )}
             </p>
           </>
         )}
-        <div className="jp-tprog mb-2" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
-             aria-label="Trip progress">
-          <div className="jp-tprogfill" style={{ width: pct + "%" }} />
-        </div>
-        <p className="jp-note mb-3">{tpos - 1} of {segs.length} legs done · {fmt(kmDone)} of {fmt(kmTotal)} km · {pct}%</p>
+
+        <input type="range" className="jp-scrub" min={0} max={maxIdx} step={1} value={v}
+               onChange={(e) => setTravelView(Number(e.target.value))}
+               aria-label="Slide to browse every stop on this trip" />
+        <p className="jp-note mb-3">
+          {tpos - 1} of {segs.length} legs done · {fmt(kmDone)} of {fmt(kmTotal)} km ({pct}%)
+          {browsing && <> · you&rsquo;re at <strong>{NODES[stops[hereIdx]].n}</strong></>}
+        </p>
+
         <div className="flex flex-wrap items-center gap-2">
-          {!doneAll ? (
-            <button type="button" className="jp-load" onClick={() => travelStep(1)}>
-              ✓ Arrived at {NODES[nextId].n}
-            </button>
-          ) : (
+          {browsing ? (
+            <>
+              <button type="button" className="jp-load" onClick={() => setTravelView(null)}>◀ Back to today</button>
+              <button type="button" className="jp-preset"
+                      onClick={() => {
+                        const t = { ...travel, pos: Math.min(stops.length, v + 1) };
+                        setTravel(t); persistTravel(t); setTravelView(null);
+                      }}>✓ I&rsquo;m here now</button>
+            </>
+          ) : liveDone ? (
             <button type="button" className="jp-load" onClick={endTravel}>Finish &amp; exit Travel Mode</button>
+          ) : (
+            <>
+              <button type="button" className="jp-load" onClick={() => travelStep(1)}>
+                ✓ Arrived at {NODES[vId].n}
+              </button>
+              {tpos > 1 && (
+                <button type="button" className="jp-preset" onClick={() => travelStep(-1)}>Back one</button>
+              )}
+            </>
           )}
-          {!doneAll && tpos > 1 && (
-            <button type="button" className="jp-preset" onClick={() => travelStep(-1)}>Back one</button>
+          {!(liveDone && !browsing) && (
+            <button type="button" className="jp-preset" onClick={scrollToGuide}>Stop guide ↓</button>
           )}
-          {!doneAll && (
-            <button type="button" className="jp-preset"
-                    onClick={() => {
-                      setOpenIdx(tpos);
-                      if (typeof document !== "undefined") {
-                        setTimeout(() => {
-                          const el = document.getElementById("jp-stop-" + tpos);
-                          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-                        }, 80);
-                      }
-                    }}>Stop guide ↓</button>
-          )}
-          {!doneAll && (
+          <button type="button" className="jp-preset" onClick={makeStory} disabled={storyBusy}>📸 Share</button>
+          {!liveDone && (
             <button type="button" className="jp-preset" onClick={endTravel}>End trip</button>
           )}
-          <button type="button" className="jp-preset" onClick={makeStory} disabled={storyBusy}>
-            📸 Share
-          </button>
         </div>
       </div>
     );
@@ -2515,6 +2581,9 @@ export default function JourneyPro() {
         .jp-modalcard { max-width: 420px; width: 100%; max-height: 92vh; overflow: auto; }
         .jp-modalimg { width: 100%; height: auto; display: block; border-radius: 12px;
           border: 1.5px solid var(--line); }
+        .jp-scrub { width: 100%; accent-color: var(--sign); height: 28px; margin: 0.1rem 0 0.25rem;
+          cursor: pointer; }
+        .jp-scrub:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; border-radius: 8px; }
       `}</style>
 
       <header className="max-w-6xl mx-auto px-4 pt-8 pb-2">
@@ -2532,7 +2601,7 @@ export default function JourneyPro() {
           </div>
           <span className="jp-display text-sm font-semibold tracking-widest uppercase px-3 py-1 rounded-md"
                 style={{ background: "var(--amber)", color: "var(--ink)" }}>
-            Prototype v0.16
+            Prototype v0.17
           </span>
         </div>
       </header>
