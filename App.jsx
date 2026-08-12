@@ -24,15 +24,18 @@ if (typeof window !== "undefined" && !window.storage) {
 }
 
 /* ============================================================
-   JourneyPro — Prototype v0.10 (the Big Lap + Tasmania)
-   · 48 new stops: Sydney→Brisbane coast, Gold Coast, the full
-     Bruce Hwy to Cairns, outback Flinders & Barkly Hwys
-     (closing the Big Lap), Canberra, Geelong — and Tasmania:
-     18 stops looping the island
-   · Spirit of Tasmania ferry: Geelong ⇄ Devonport as a proper
-     leg — no fuel burned, +1 travel day, dashed on the map,
-     fare guidance shown (fares not in totals)
-   · Plus everything from v0.9 (route map)
+   JourneyPro — Prototype v0.11 (the West + the Outback Way)
+   · 51 new stops: Victoria Hwy & the Kimberley, Broome, the
+     Pilbara coast, Ningaloo (Coral Bay & Exmouth), Carnarvon,
+     Kalbarri, Geraldton, the Goldfields (Kalgoorlie) — the
+     full Darwin → Perth coast
+   · The Outback Way: Great Central Rd + Plenty Hwy as proper
+     UNSEALED legs — extra fuel burn, warnings, permit note,
+     amber-dashed on the map
+   · Matilda Way sealed corridor: Winton → Longreach →
+     Charleville → Roma → Toowoomba → Brisbane, + Emerald link
+   · The Big Lap preset is now the full coastal ring
+   · Plus everything from v0.10
    Curated prototype dataset — figures are realistic estimates
    ============================================================ */
 
@@ -250,7 +253,7 @@ function vanProfile(style, len) {
   return 0.18 + Math.max(0, Math.min(0.04, (len - 19) * 0.01));
 }
 
-const TERR = { f: 1.0, r: 1.06, h: 1.14, y: 0 }; /* y = Bass Strait ferry: no fuel burned */
+const TERR = { f: 1.0, r: 1.06, h: 1.14, y: 0, u: 1.22 }; /* y = ferry (no fuel) · u = unsealed (+22% burn) */
 
 /* ---------- Waypoint network with stop guides ---------- */
 const NODES = {
@@ -658,6 +661,181 @@ const NODES = {
   hamiltontas: { n: "Hamilton (TAS)", k: "town", f: true, d: 0.12, g: "Tasmania — south & east", st: "TAS",
     hrs: "~8am–6pm", fac: ["Fuel", "Pub", "Toilets"],
     see: "Georgian village on the Clyde", stay: "Riverside camping reserve" },
+
+  /* ---- Victoria Hwy — NT ---- */
+  victoriariver: { n: "Victoria River", k: "rh", f: true, d: 0.35, g: "Victoria Hwy — NT", st: "NT",
+    hrs: "Roadhouse ~7am–9pm", fac: ["Fuel", "Meals", "Van sites"],
+    see: "Escarpment country; boab-lined river crossing", stay: "Victoria River Roadhouse sites" },
+  timbercreek: { n: "Timber Creek", k: "town", f: true, d: 0.35, g: "Victoria Hwy — NT", st: "NT",
+    hrs: "~7am–9pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "Croc-spotting cruises; Gregory's boab tree", stay: "Timber Creek Hotel caravan park" },
+
+  /* ---- The Kimberley — WA ---- */
+  kununurra: { n: "Kununurra", k: "town", f: true, d: 0.2, g: "The Kimberley — WA", st: "WA",
+    hrs: "~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
+    see: "Lake Argyle cruise; Ord River; Mirima mini-Bungles", stay: "Kimberleyland Waterfront Park" },
+  warmun: { n: "Warmun (Turkey Creek)", k: "rh", f: true, d: 0.4, g: "The Kimberley — WA", st: "WA",
+    hrs: "Roadhouse ~6am–9pm", fac: ["Fuel", "Meals", "Toilets"],
+    see: "Purnululu (Bungle Bungles) chopper flights from here", stay: "Warmun Roadhouse sites" },
+  hallscreek: { n: "Halls Creek", k: "town", f: true, d: 0.35, g: "The Kimberley — WA", st: "WA",
+    hrs: "~6am–9pm", fac: ["Fuel", "Supermarket", "Toilets"],
+    see: "China Wall quartz ridge; Bungles southern access", stay: "Halls Creek Caravan Park" },
+  fitzroycrossing: { n: "Fitzroy Crossing", k: "town", f: true, d: 0.35, g: "The Kimberley — WA", st: "WA",
+    hrs: "~6am–9pm", fac: ["Fuel", "Supermarket", "Toilets"],
+    see: "Danggu (Geikie) Gorge boat trip", stay: "Fitzroy River Lodge sites" },
+  willare: { n: "Willare Bridge", k: "rh", f: true, d: 0.4, g: "The Kimberley — WA", st: "WA",
+    hrs: "Roadhouse ~6am–9pm", fac: ["Fuel", "Meals", "Van sites"],
+    see: "Fitzroy floodplain boabs; Derby turnoff", stay: "Willare Bridge Roadhouse park" },
+  derby: { n: "Derby", k: "town", f: true, d: 0.25, g: "The Kimberley — WA", st: "WA",
+    hrs: "~6am–9pm", fac: ["Fuel", "Supermarket", "Dump point"],
+    see: "11-metre tides at the wharf; Boab Prison Tree", stay: "Kimberley Entrance Caravan Park" },
+  broome: { n: "Broome", k: "town", f: true, d: 0.15, g: "The Kimberley — WA", st: "WA",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Cable Beach camels at sunset; Staircase to the Moon", stay: "Cable Beach Caravan Park" },
+
+  /* ---- Pilbara coast — WA ---- */
+  sandfire: { n: "Sandfire Roadhouse", k: "rh", f: true, d: 0.45, g: "Pilbara coast — WA", st: "WA",
+    hrs: "Roadhouse ~6am–9pm", fac: ["Fuel", "Meals", "Van sites"],
+    see: "The lonely middle of the Great Northern Hwy", stay: "Sandfire Roadhouse sites" },
+  pardoo: { n: "Pardoo Roadhouse", k: "rh", f: true, d: 0.45, g: "Pilbara coast — WA", st: "WA",
+    hrs: "Roadhouse ~6am–9pm", fac: ["Fuel", "Meals", "Van sites"],
+    see: "Eighty Mile Beach 45 min back up the road", stay: "Pardoo Roadhouse sites" },
+  porthedland: { n: "Port Hedland", k: "town", f: true, d: 0.12, g: "Pilbara coast — WA", st: "WA",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Iron-ore ships the size of suburbs; salt mountains", stay: "Discovery Parks Port Hedland" },
+  roebourne: { n: "Roebourne", k: "town", f: true, d: 0.2, g: "Pilbara coast — WA", st: "WA",
+    hrs: "~6am–8pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "Cossack ghost-town heritage 15 min away", stay: "Harding River Caravan Park" },
+  karratha: { n: "Karratha", k: "town", f: true, d: 0.12, g: "Pilbara coast — WA", st: "WA",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Murujuga rock art; Dampier's Red Dog statue", stay: "Discovery Parks Pilbara, Karratha" },
+  nanutarra: { n: "Nanutarra Roadhouse", k: "rh", f: true, d: 0.45, g: "Pilbara coast — WA", st: "WA",
+    hrs: "Roadhouse ~6am–9pm", fac: ["Fuel", "Meals", "Van sites"],
+    see: "Ashburton River crossing", stay: "Nanutarra Roadhouse sites" },
+
+  /* ---- Ningaloo & Gascoyne — WA ---- */
+  minilya: { n: "Minilya Roadhouse", k: "rh", f: true, d: 0.4, g: "Ningaloo & Gascoyne — WA", st: "WA",
+    hrs: "Roadhouse ~6am–9pm", fac: ["Fuel", "Meals", "Van sites"],
+    see: "The Exmouth / Coral Bay turnoff", stay: "Minilya Roadhouse sites" },
+  coralbay: { n: "Coral Bay", k: "town", f: true, d: 0.3, g: "Ningaloo & Gascoyne — WA", st: "WA",
+    hrs: "~7am–7pm", fac: ["Fuel", "Store", "Toilets"],
+    see: "Snorkel Ningaloo straight off the beach", stay: "Peoples Park Coral Bay" },
+  exmouth: { n: "Exmouth", k: "town", f: true, d: 0.15, g: "Ningaloo & Gascoyne — WA", st: "WA",
+    hrs: "~5am–10pm", fac: ["Fuel", "Supermarket", "Dump point"],
+    see: "Whale sharks (Mar–Jul); Turquoise Bay drift snorkel", stay: "RAC Exmouth Cape Holiday Park" },
+  carnarvon: { n: "Carnarvon", k: "town", f: true, d: 0.15, g: "Ningaloo & Gascoyne — WA", st: "WA",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Space & Technology Museum; plantation ice-cream", stay: "Wintersun Caravan Park" },
+  overlander: { n: "Overlander Roadhouse", k: "rh", f: true, d: 0.4, g: "Ningaloo & Gascoyne — WA", st: "WA",
+    hrs: "Roadhouse ~6am–9pm", fac: ["Fuel", "Meals", "Van sites"],
+    see: "Shark Bay / Monkey Mia turnoff", stay: "Overlander Roadhouse sites" },
+
+  /* ---- Batavia & Turquoise coast — WA ---- */
+  northampton: { n: "Northampton", k: "town", f: true, d: 0.1, g: "Batavia & Turquoise coast — WA", st: "WA",
+    hrs: "~6am–8pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "Heritage-listed main street; Kalbarri turnoff", stay: "Northampton caravan park" },
+  kalbarri: { n: "Kalbarri", k: "town", f: true, d: 0.15, g: "Batavia & Turquoise coast — WA", st: "WA",
+    hrs: "~6am–8pm", fac: ["Fuel", "Supermarket", "Toilets"],
+    see: "Nature's Window; Skywalk; coastal cliffs", stay: "Kalbarri Anchorage Caravan Park" },
+  geraldton: { n: "Geraldton", k: "city", f: true, d: 0.06, g: "Batavia & Turquoise coast — WA", st: "WA",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "All services"],
+    see: "HMAS Sydney II Memorial; foreshore", stay: "Sunset Beach Holiday Park" },
+  dongara: { n: "Dongara–Denison", k: "town", f: true, d: 0.08, g: "Batavia & Turquoise coast — WA", st: "WA",
+    hrs: "~6am–9pm", fac: ["Fuel", "Supermarket", "Bakery"],
+    see: "Crayfish port; Moreton Terrace figs", stay: "Dongara Denison Beach Holiday Park" },
+  jurienbay: { n: "Jurien Bay", k: "town", f: true, d: 0.1, g: "Batavia & Turquoise coast — WA", st: "WA",
+    hrs: "~6am–8pm", fac: ["Fuel", "Supermarket", "Toilets"],
+    see: "Sea lions; the Pinnacles 20 min south at Cervantes", stay: "Jurien Bay Tourist Park" },
+
+  /* ---- Goldfields — WA ---- */
+  kalgoorlie: { n: "Kalgoorlie–Boulder", k: "city", f: true, d: 0.08, g: "Goldfields — WA", st: "WA",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "All services"],
+    see: "Super Pit lookout; Hannan Street pubs", stay: "Discovery Parks Kalgoorlie" },
+  leonora: { n: "Leonora", k: "town", f: true, d: 0.2, g: "Goldfields — WA", st: "WA",
+    hrs: "~6am–8pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "Gwalia ghost town & headframe", stay: "Leonora Caravan Park" },
+  laverton: { n: "Laverton", k: "town", f: true, d: 0.25, g: "Goldfields — WA", st: "WA",
+    hrs: "~6am–8pm", fac: ["Fuel", "Store", "Toilets"],
+    see: "Western end of the Outback Way — Great Beyond centre", stay: "Laverton Caravan Park" },
+
+  /* ---- Outback Way — Great Central Rd (unsealed) ---- */
+  dockerriver: { n: "Docker River (Kaltukatjara)", k: "town", f: true, d: 0.9, g: "Outback Way — Great Central Rd", st: "NT",
+    hrs: "Community store — limited hrs", fac: ["Fuel", "Store", "Toilets"],
+    see: "Petermann Ranges country — permits required", stay: "Community campground" },
+  warakurna: { n: "Warakurna Roadhouse", k: "rh", f: true, d: 1.0, g: "Outback Way — Great Central Rd", st: "WA",
+    hrs: "Roadhouse ~8am–5pm", fac: ["Fuel", "Meals", "Toilets"],
+    see: "Giles weather station tours", stay: "Warakurna Roadhouse camping" },
+  warburton: { n: "Warburton Roadhouse", k: "rh", f: true, d: 1.0, g: "Outback Way — Great Central Rd", st: "WA",
+    hrs: "Roadhouse ~8am–5pm", fac: ["Fuel", "Meals", "Toilets"],
+    see: "Tjulyuru art gallery", stay: "Warburton Roadhouse camping" },
+  tjukayirla: { n: "Tjukayirla Roadhouse", k: "rh", f: true, d: 1.1, g: "Outback Way — Great Central Rd", st: "WA",
+    hrs: "Roadhouse ~8am–5pm", fac: ["Fuel", "Meals", "Toilets"],
+    see: "One of Australia's remotest roadhouses", stay: "Tjukayirla Roadhouse camping" },
+
+  /* ---- Outback Way — Plenty Hwy (unsealed) ---- */
+  gemtree: { n: "Gemtree", k: "rh", f: true, d: 0.5, g: "Outback Way — Plenty Hwy", st: "NT",
+    hrs: "~8am–5pm", fac: ["Fuel", "Store", "Van sites"],
+    see: "Fossick your own garnets & zircons", stay: "Gemtree Caravan Park" },
+  jervois: { n: "Jervois Station", k: "rh", f: true, d: 0.9, g: "Outback Way — Plenty Hwy", st: "NT",
+    hrs: "Station hours — call ahead", fac: ["Fuel", "Toilets"],
+    see: "Working cattle station stop", stay: "Station camping" },
+  tobermorey: { n: "Tobermorey Station", k: "rh", f: true, d: 0.9, g: "Outback Way — Plenty Hwy", st: "NT",
+    hrs: "Station hours — call ahead", fac: ["Fuel", "Toilets"],
+    see: "Last NT stop before the QLD border", stay: "Station camping" },
+  boulia: { n: "Boulia", k: "town", f: true, d: 0.3, g: "Outback Way — Plenty Hwy", st: "QLD",
+    hrs: "~6am–8pm", fac: ["Fuel", "Store", "Toilets"],
+    see: "Min Min light country; camel races (Jul)", stay: "Boulia Caravan Park" },
+  middleton: { n: "Middleton", k: "town", f: false, d: 0.3, g: "Outback Way — Plenty Hwy", st: "QLD",
+    hrs: "No fuel — pub only", fac: ["Pub", "Toilets"],
+    see: "The legendary Middleton Hotel (pop. 2)", stay: "Camp beside the pub" },
+
+  /* ---- Matilda Country — QLD ---- */
+  mckinlay: { n: "McKinlay", k: "town", f: true, d: 0.2, g: "Matilda Country — QLD", st: "QLD",
+    hrs: "~7am–9pm", fac: ["Fuel", "Pub", "Toilets"],
+    see: "Walkabout Creek Hotel — Crocodile Dundee's pub", stay: "Sites behind the Walkabout Creek" },
+  kynuna: { n: "Kynuna", k: "town", f: true, d: 0.2, g: "Matilda Country — QLD", st: "QLD",
+    hrs: "~7am–9pm", fac: ["Fuel", "Pub", "Toilets"],
+    see: "Blue Heeler Hotel; Combo Waterhole (Waltzing Matilda)", stay: "Blue Heeler sites" },
+  winton: { n: "Winton", k: "town", f: true, d: 0.15, g: "Matilda Country — QLD", st: "QLD",
+    hrs: "~6am–9pm", fac: ["Fuel", "Supermarket", "Dump point"],
+    see: "Waltzing Matilda Centre; dinosaur stampede at Lark Quarry", stay: "Matilda Country Tourist Park" },
+  longreach: { n: "Longreach", k: "town", f: true, d: 0.12, g: "Matilda Country — QLD", st: "QLD",
+    hrs: "~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
+    see: "Qantas Founders Museum; Stockman's Hall of Fame", stay: "Longreach Tourist Park" },
+  barcaldine: { n: "Barcaldine", k: "town", f: true, d: 0.12, g: "Matilda Country — QLD", st: "QLD",
+    hrs: "~6am–9pm", fac: ["Fuel", "Supermarket", "Toilets"],
+    see: "Tree of Knowledge memorial", stay: "Homestead Caravan Park" },
+  blackall: { n: "Blackall", k: "town", f: true, d: 0.12, g: "Matilda Country — QLD", st: "QLD",
+    hrs: "~6am–9pm", fac: ["Fuel", "Supermarket", "Toilets"],
+    see: "Beyond the Black Stump; historic wool scour; artesian spa", stay: "Blackall Caravan Park" },
+  tambo: { n: "Tambo", k: "town", f: true, d: 0.12, g: "Matilda Country — QLD", st: "QLD",
+    hrs: "~7am–7pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "Tambo Teddies workshop", stay: "Tambo Mill van sites" },
+  charleville: { n: "Charleville", k: "town", f: true, d: 0.1, g: "Matilda Country — QLD", st: "QLD",
+    hrs: "~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
+    see: "Cosmos Centre stargazing; bilby encounters", stay: "Bailey Bar Caravan Park" },
+  mitchell: { n: "Mitchell", k: "town", f: true, d: 0.08, g: "Matilda Country — QLD", st: "QLD",
+    hrs: "~6am–9pm", fac: ["Fuel", "Supermarket", "Toilets"],
+    see: "Great Artesian Spa — hot pools for weary towers", stay: "Major Mitchell Caravan Park" },
+
+  /* ---- Darling Downs & the west — QLD ---- */
+  roma: { n: "Roma", k: "town", f: true, d: 0.06, g: "Darling Downs & west — QLD", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Australia's biggest cattle sales (Tue/Thu); Big Rig", stay: "Big Rig Tourist Park" },
+  miles: { n: "Miles", k: "town", f: true, d: 0.05, g: "Darling Downs & west — QLD", st: "QLD",
+    hrs: "~6am–9pm", fac: ["Fuel", "Supermarket", "Toilets"],
+    see: "Historical Village; wildflowers (Sep)", stay: "Possum Park (WWII bunkers)" },
+  dalby: { n: "Dalby", k: "town", f: true, d: 0.03, g: "Darling Downs & west — QLD", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Darling Downs grain country", stay: "Myall Creek parks" },
+  toowoomba: { n: "Toowoomba", k: "city", f: true, d: 0, g: "Darling Downs & west — QLD", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "All services"],
+    see: "Picnic Point over the range; Carnival of Flowers (Sep)", stay: "Toowoomba Showgrounds RV park" },
+
+  /* ---- Central highlands — QLD ---- */
+  emerald: { n: "Emerald", k: "town", f: true, d: 0.06, g: "Central highlands — QLD", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Gemfields fossicking (sapphires) 45 min west", stay: "Lake Maraboon Holiday Village" },
 };
 
 const EDGES = [
@@ -711,6 +889,27 @@ const EDGES = [
   ["sorell","portarthur",74,"r"], ["launceston","oatlands",132,"f"], ["oatlands","hobart",84,"f"],
   ["hobart","hamiltontas",73,"r"], ["hamiltontas","derwentbridge",100,"h"], ["derwentbridge","queenstown",86,"h"],
   ["queenstown","strahan",40,"h"], ["queenstown","rosebery",53,"h"], ["rosebery","burnie",105,"h"],
+  ["katherine","victoriariver",194,"f"], ["victoriariver","timbercreek",91,"f"],
+  ["timbercreek","kununurra",225,"f"], ["kununurra","warmun",197,"r"], ["warmun","hallscreek",161,"r"],
+  ["hallscreek","fitzroycrossing",288,"f"], ["fitzroycrossing","willare",254,"f"],
+  ["willare","derby",55,"f"], ["willare","broome",172,"f"],
+  ["broome","sandfire",305,"f"], ["sandfire","pardoo",152,"f"], ["pardoo","porthedland",148,"f"],
+  ["porthedland","roebourne",202,"f"], ["roebourne","karratha",40,"f"], ["karratha","nanutarra",275,"f"],
+  ["nanutarra","minilya",227,"f"], ["minilya","coralbay",96,"f"], ["coralbay","exmouth",152,"f"],
+  ["minilya","carnarvon",142,"f"], ["carnarvon","overlander",202,"f"], ["overlander","northampton",232,"f"],
+  ["northampton","kalbarri",102,"r"], ["northampton","geraldton",51,"f"], ["geraldton","dongara",65,"f"],
+  ["dongara","jurienbay",110,"f"], ["jurienbay","perth",220,"f"],
+  ["coolgardie","kalgoorlie",39,"f"], ["kalgoorlie","leonora",237,"f"], ["leonora","laverton",124,"f"],
+  ["yulara","dockerriver",231,"u"], ["dockerriver","warakurna",106,"u"], ["warakurna","warburton",228,"u"],
+  ["warburton","tjukayirla",247,"u"], ["tjukayirla","laverton",296,"u"],
+  ["alicesprings","gemtree",140,"f"], ["gemtree","jervois",205,"u"], ["jervois","tobermorey",252,"u"],
+  ["tobermorey","boulia",246,"u"], ["boulia","middleton",194,"r"], ["middleton","winton",169,"r"],
+  ["cloncurry","mckinlay",107,"f"], ["mckinlay","kynuna",74,"f"], ["kynuna","winton",166,"f"],
+  ["winton","longreach",180,"f"], ["longreach","barcaldine",108,"f"], ["barcaldine","blackall",107,"f"],
+  ["blackall","tambo",100,"f"], ["tambo","charleville",200,"f"], ["charleville","mitchell",178,"f"],
+  ["mitchell","roma",88,"f"], ["roma","miles",141,"f"], ["miles","dalby",129,"f"],
+  ["dalby","toowoomba",84,"f"], ["toowoomba","brisbane",127,"h"],
+  ["barcaldine","emerald",307,"f"], ["emerald","rockhampton",270,"f"],
 ];
 
 const ADJ = {};
@@ -731,7 +930,11 @@ function findPath(from, to) {
     if (u === null || u === to) break;
     done[u] = true;
     (ADJ[u] || []).forEach((e) => {
-      if (dist[u] + e.km < dist[e.to]) { dist[e.to] = dist[u] + e.km; prev[e.to] = u; }
+      /* Route choice prefers bitumen: unsealed legs cost 1.4x their km when
+         picking a path, so dirt only wins where it genuinely earns it
+         (e.g. the Outback Way). Displayed km and fuel stay real. */
+      const w = dist[u] + e.km * (e.t === "u" ? 1.4 : 1);
+      if (w < dist[e.to]) { dist[e.to] = w; prev[e.to] = u; }
     });
   }
   if (dist[to] === Infinity) return null;
@@ -750,7 +953,10 @@ const PRESETS = [
   { name: "Adelaide → Broken Hill", stops: ["adelaide", "brokenhill"] },
   { name: "Brisbane → Cairns",     stops: ["brisbane", "cairns"] },
   { name: "Melbourne → Hobart",    stops: ["melbourne", "hobart"] },
-  { name: "The Big Lap",           stops: ["adelaide", "darwin", "cairns", "brisbane", "sydney", "melbourne", "adelaide"] },
+  { name: "Darwin → Broome",       stops: ["darwin", "broome"] },
+  { name: "Perth → Exmouth",       stops: ["perth", "exmouth"] },
+  { name: "The Outback Way",       stops: ["winton", "alicesprings", "yulara", "laverton"] },
+  { name: "The Big Lap",           stops: ["adelaide", "melbourne", "sydney", "brisbane", "cairns", "darwin", "broome", "perth", "adelaide"] },
 ];
 
 const STATE_GROUPS = [
@@ -810,6 +1016,23 @@ const COORDS = {
   oatlands:[-42.3,147.37], sthelens:[-41.32,148.24], bicheno:[-41.87,148.3],
   swansea:[-42.12,148.07], triabunna:[-42.51,147.91], sorell:[-42.79,147.56],
   portarthur:[-43.15,147.85], hobart:[-42.88,147.33], hamiltontas:[-42.55,146.84],
+  victoriariver:[-15.61,131.12], timbercreek:[-15.66,130.48], kununurra:[-15.77,128.74],
+  warmun:[-17.02,128.22], hallscreek:[-18.23,127.66], fitzroycrossing:[-18.2,125.58],
+  willare:[-17.73,123.65], derby:[-17.3,123.63], broome:[-17.96,122.24],
+  sandfire:[-19.77,121.09], pardoo:[-20.11,119.58], porthedland:[-20.31,118.61],
+  roebourne:[-20.77,117.15], karratha:[-20.74,116.85], nanutarra:[-22.54,115.49],
+  minilya:[-23.81,114.42], coralbay:[-23.14,113.77], exmouth:[-21.93,114.13],
+  carnarvon:[-24.88,113.66], overlander:[-26.4,114.47], northampton:[-28.35,114.63],
+  kalbarri:[-27.71,114.16], geraldton:[-28.77,114.61], dongara:[-29.25,114.93],
+  jurienbay:[-30.31,115.04], kalgoorlie:[-30.75,121.47], leonora:[-28.88,121.33],
+  laverton:[-28.63,122.4], dockerriver:[-24.87,129.09], warakurna:[-25.05,128.3],
+  warburton:[-26.13,126.58], tjukayirla:[-27.35,124.35], gemtree:[-22.98,134.25],
+  jervois:[-22.91,136.13], tobermorey:[-22.26,137.96], boulia:[-22.91,139.91],
+  middleton:[-22.35,141.55], mckinlay:[-21.27,141.29], kynuna:[-21.58,141.92],
+  winton:[-22.39,143.04], longreach:[-23.44,144.25], barcaldine:[-23.55,145.29],
+  blackall:[-24.42,145.46], tambo:[-24.88,146.26], charleville:[-26.4,146.24],
+  mitchell:[-26.49,147.98], roma:[-26.57,148.79], miles:[-26.66,150.19],
+  dalby:[-27.18,151.26], toowoomba:[-27.56,151.95], emerald:[-23.53,148.16],
 };
 
 /* WMO weather codes → label + emoji */
@@ -880,16 +1103,19 @@ function RouteSketch({ route, waypoints, fills }) {
   const pts = SKETCH_PTS;
   const runs = [];
   if (route.segs.length > 0) {
-    let cur = [route.stops[0]];
+    const kindOf = (t) => (t === "y" ? "ferry" : t === "u" ? "dirt" : "road");
+    let cur = [route.stops[0]], curKind = kindOf(route.segs[0].t);
     route.segs.forEach((s, i) => {
+      const kind = kindOf(s.t);
       const nxt = route.stops[i + 1];
-      if (s.t === "y") {
-        if (cur.length > 1) runs.push({ ids: cur, ferry: false });
-        runs.push({ ids: [route.stops[i], nxt], ferry: true });
-        cur = [nxt];
-      } else cur.push(nxt);
+      if (kind !== curKind) {
+        runs.push({ ids: cur, kind: curKind });
+        cur = [route.stops[i]];
+        curKind = kind;
+      }
+      cur.push(nxt);
     });
-    if (cur.length > 1) runs.push({ ids: cur, ferry: false });
+    if (cur.length > 1) runs.push({ ids: cur, kind: curKind });
   }
   const ptStr = (ids) => ids.map((id) => pts[id][0].toFixed(1) + "," + pts[id][1].toFixed(1)).join(" ");
   return (
@@ -901,9 +1127,16 @@ function RouteSketch({ route, waypoints, fills }) {
         <line key={i} x1={pts[a][0]} y1={pts[a][1]} x2={pts[b][0]} y2={pts[b][1]}
               stroke="#CFCEC2" strokeWidth={1.5} strokeDasharray="4 4" strokeLinecap="round" />
       ))}
-      {runs.map((r, i) => r.ferry ? (
+      {runs.map((r, i) => r.kind === "ferry" ? (
         <polyline key={"run" + i} points={ptStr(r.ids)} fill="none" stroke="var(--sign)"
                   strokeWidth={2.5} strokeDasharray="6 7" strokeLinejoin="round" strokeLinecap="round" />
+      ) : r.kind === "dirt" ? (
+        <g key={"run" + i}>
+          <polyline points={ptStr(r.ids)} fill="none" stroke="var(--ink)" strokeWidth={5.5}
+                    strokeLinejoin="round" strokeLinecap="round" />
+          <polyline points={ptStr(r.ids)} fill="none" stroke="var(--amber)" strokeWidth={3}
+                    strokeDasharray="8 6" strokeLinejoin="round" strokeLinecap="round" />
+        </g>
       ) : (
         <g key={"run" + i}>
           <polyline points={ptStr(r.ids)} fill="none" stroke="#FFFFFF" strokeWidth={6.5}
@@ -991,23 +1224,30 @@ function RouteMap({ route, waypoints, fills, dayAt, stays }) {
       }).addTo(ov);
     });
 
-    /* The active route: white-cased green on roads, dashed green across Bass Strait */
+    /* The active route: cased green on bitumen, dashed green over Bass Strait,
+       ink-cased dashed amber on unsealed Outback Way legs */
     if (route.segs.length > 0) {
+      const kindOf = (t) => (t === "y" ? "ferry" : t === "u" ? "dirt" : "road");
       const runs = [];
-      let cur = [route.stops[0]];
+      let cur = [route.stops[0]], curKind = kindOf(route.segs[0].t);
       route.segs.forEach((s, i) => {
+        const kind = kindOf(s.t);
         const nxt = route.stops[i + 1];
-        if (s.t === "y") {
-          if (cur.length > 1) runs.push({ ids: cur, ferry: false });
-          runs.push({ ids: [route.stops[i], nxt], ferry: true });
-          cur = [nxt];
-        } else cur.push(nxt);
+        if (kind !== curKind) {
+          runs.push({ ids: cur, kind: curKind });
+          cur = [route.stops[i]];
+          curKind = kind;
+        }
+        cur.push(nxt);
       });
-      if (cur.length > 1) runs.push({ ids: cur, ferry: false });
+      if (cur.length > 1) runs.push({ ids: cur, kind: curKind });
       runs.forEach((r) => {
         const path = r.ids.map((id) => COORDS[id]);
-        if (r.ferry) {
+        if (r.kind === "ferry") {
           L.polyline(path, { color: "#00674F", weight: 3, opacity: 0.9, dashArray: "7 9", interactive: false }).addTo(ov);
+        } else if (r.kind === "dirt") {
+          L.polyline(path, { color: "#21262A", weight: 7, opacity: 0.9, lineJoin: "round", interactive: false }).addTo(ov);
+          L.polyline(path, { color: "#F5B301", weight: 4, opacity: 1, dashArray: "10 8", interactive: false }).addTo(ov);
         } else {
           L.polyline(path, { color: "#FFFFFF", weight: 8, opacity: 0.9, lineJoin: "round", interactive: false }).addTo(ov);
           L.polyline(path, { color: "#00674F", weight: 4, opacity: 1, lineJoin: "round", interactive: false }).addTo(ov);
@@ -1096,6 +1336,9 @@ function RouteMap({ route, waypoints, fills, dayAt, stays }) {
         <p className="jp-note mt-2">
           <span className="jp-key jp-key-d" aria-hidden /> destinations · <span className="jp-key jp-key-r" aria-hidden /> route
           stops · <span className="jp-key jp-key-f" aria-hidden /> fill-ups
+          {route.segs.some((s) => s.t === "u") && (
+            <> · <span className="jp-key jp-key-u" aria-hidden /> unsealed</>
+          )}
           {mapState === "live" ? " — tap any pin for details" : ""}
         </p>
       ) : (
@@ -1550,6 +1793,7 @@ export default function JourneyPro() {
         .jp-key-d { background: var(--amber); border: 1.5px solid var(--ink); transform: rotate(45deg); }
         .jp-key-r { background: var(--sign); border-radius: 999px; border: 1.5px solid #fff; }
         .jp-key-f { background: var(--amber); border-radius: 999px; border: 1.5px solid var(--ink); }
+        .jp-key-u { background: var(--amber); border: 1.5px dashed var(--ink); }
       `}</style>
 
       <header className="max-w-6xl mx-auto px-4 pt-8 pb-2">
@@ -1567,7 +1811,7 @@ export default function JourneyPro() {
           </div>
           <span className="jp-display text-sm font-semibold tracking-widest uppercase px-3 py-1 rounded-md"
                 style={{ background: "var(--amber)", color: "var(--ink)" }}>
-            Prototype v0.10
+            Prototype v0.11
           </span>
         </div>
       </header>
@@ -2041,6 +2285,14 @@ export default function JourneyPro() {
                   and rig length, and book well ahead for summer.
                 </p>
               )}
+              {route.segs.some((s) => s.t === "u") && (
+                <p className="jp-note mb-2" style={{ color: "var(--red)", fontWeight: 600 }}>
+                  ⚠️ This route includes unsealed Outback Way legs — genuine dirt-road touring.
+                  Off-road van, extra water and spare fuel strongly advised; check road conditions
+                  after rain, and arrange the free WA &amp; NT transit permits for the Great Central
+                  Road online before you go. Fuel figures already allow extra burn on dirt.
+                </p>
+              )}
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <button type="button" className="jp-preset" onClick={fetchWeather}
                         disabled={wx.status === "loading"}>
@@ -2149,7 +2401,12 @@ export default function JourneyPro() {
                       route.segs[i].t === "y" ? (
                         <p className="jp-seg">⛴️ Spirit of Tasmania — overnight crossing, ~9–11 hr, no fuel burned</p>
                       ) : (
-                        <p className="jp-seg jp-mono">{route.segs[i].km} km</p>
+                        <p className="jp-seg jp-mono">
+                          {route.segs[i].km} km
+                          {route.segs[i].t === "u" && (
+                            <span style={{ color: "var(--red)", fontWeight: 700 }}> · unsealed</span>
+                          )}
+                        </p>
                       )
                     )}
                   </div>
