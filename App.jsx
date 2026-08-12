@@ -24,13 +24,15 @@ if (typeof window !== "undefined" && !window.storage) {
 }
 
 /* ============================================================
-   JourneyPro — Prototype v0.14 (departing-from, everywhere)
-   · The Departing from + Round trip controls now live inside
-     EVERY trip idea's panel (and stay at the top of the card) —
-     one shared setting, impossible to miss
-   · Cost chips name the town: "from St Helens: ≈ 16,400 km
-     all-in" — no doubt whose door the quote is from
-   · Plus everything from v0.13
+   JourneyPro — Prototype v0.15 (Travel Mode)
+   · Start this trip → the app becomes an on-road companion:
+     day counter, next stop with leg km + litres, next fill-up
+     (how far, how many litres, rough cost), lay-night and
+     no-fuel flags, arrival weather with a strong-wind towing
+     warning, live progress bar, Arrived / Back / End controls
+   · Travel state persists on-device — close the app at Marla,
+     open it at Marla
+   · Plus everything from v0.14
    Curated prototype dataset — figures are realistic estimates
    ============================================================ */
 
@@ -1689,6 +1691,7 @@ export default function JourneyPro() {
   const [storageOk, setStorageOk] = useState(true);
   const [stays, setStays] = useState({});
   const [tripMarks, setTripMarks] = useState(null);
+  const [travel, setTravel] = useState(null); /* { active, startedISO, pos, wp, stays, marks } */
 
   const make = VEHICLE_DATA[makeIdx];
   const model = make.models[Math.min(modelIdx, make.models.length - 1)];
@@ -1856,6 +1859,52 @@ export default function JourneyPro() {
     setOpenIdx(null);
     setWx({ status: "idle", byId: {} });
   };
+  const persistTravel = async (t) => {
+    if (typeof window === "undefined" || !window.storage) return;
+    try {
+      if (t) await window.storage.set("travel:active", JSON.stringify(t));
+      else await window.storage.delete("travel:active");
+    } catch (e) { /* best effort */ }
+  };
+
+  useEffect(() => {
+    /* Resume an in-progress trip when the app reopens */
+    if (typeof window === "undefined" || !window.storage) return;
+    (async () => {
+      try {
+        const res = await window.storage.get("travel:active");
+        if (res && res.value) {
+          const t = JSON.parse(res.value);
+          if (t && t.active && Array.isArray(t.wp) && t.wp.length > 1) {
+            setWaypoints(t.wp.filter((id) => NODES[id]));
+            setStays(t.stays && typeof t.stays === "object" ? t.stays : {});
+            setTripMarks(t.marks || null);
+            setTravel(t);
+          }
+        }
+      } catch (e) { /* no trip in progress */ }
+    })();
+  }, []);
+
+  const startTravel = () => {
+    const t = {
+      active: true,
+      startedISO: new Date().toISOString(),
+      pos: 1, /* index of the stop we're heading to */
+      wp: waypoints.slice(),
+      stays: { ...stays },
+      marks: tripMarks,
+    };
+    setTravel(t); persistTravel(t);
+  };
+  const travelStep = (dir) => {
+    if (!travel) return;
+    const pos = Math.max(1, Math.min(route.stops.length, travel.pos + dir));
+    const t = { ...travel, pos };
+    setTravel(t); persistTravel(t);
+  };
+  const endTravel = () => { setTravel(null); persistTravel(null); };
+
   const loadSuggested = (stops, staysObj = {}, marks = null) => {
     setWaypoints(stops.filter((id) => NODES[id]));
     setStays(staysObj);
@@ -1986,6 +2035,98 @@ export default function JourneyPro() {
   const endId = waypoints[waypoints.length - 1];
   const vanMake = VAN_DATA[vanMakeIdx];
   const trSize = TRAILER_SIZES[trSizeIdx];
+
+
+  const travelCard = travel && route.segs.length > 0 ? (() => {
+    const stops = route.stops, segs = route.segs;
+    const tpos = Math.min(travel.pos, stops.length);
+    const doneAll = tpos >= stops.length;
+    const nextId = doneAll ? stops[stops.length - 1] : stops[tpos];
+    const prevId = stops[Math.max(0, tpos - 1)];
+    const leg = doneAll ? null : segs[tpos - 1];
+    const legL = leg && leg.t !== "y" ? (leg.km * vehicle.real * load.factor * TERR[leg.t]) / 100 : 0;
+    const dayN = Math.max(1, Math.floor((Date.now() - new Date(travel.startedISO).getTime()) / 86400000) + 1);
+    let kmDone = 0, kmTotal = 0;
+    segs.forEach((s, i) => { if (s.t !== "y") { kmTotal += s.km; if (i < tpos - 1) kmDone += s.km; } });
+    const pct = kmTotal > 0 ? Math.round((kmDone / kmTotal) * 100) : 0;
+    let fillIdx = -1;
+    for (let j = tpos; j < stops.length; j++) { if (plan.fills[stops[j]]) { fillIdx = j; break; } }
+    let fillKm = 0;
+    if (fillIdx >= 0) for (let j = tpos - 1; j < fillIdx; j++) { if (segs[j] && segs[j].t !== "y") fillKm += segs[j].km; }
+    const fill = fillIdx >= 0 ? plan.fills[stops[fillIdx]] : null;
+    const layN = !doneAll ? Math.max(0, Number(stays[nextId]) || 0) : 0;
+    const w = wx.byId[nextId];
+    return (
+      <div className="jp-card p-5 jp-travelcard">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <span className="jp-eyebrow">🚐 Travel Mode</span>
+          <span className="jp-chip jp-mono">Day {dayN} on the road</span>
+        </div>
+        {doneAll ? (
+          <>
+            <p className="jp-travelbig">Trip complete — {NODES[nextId].n} 🎉</p>
+            <p className="jp-note mb-2">{fmt(kmTotal)} km towed. Go on, tell the group.</p>
+          </>
+        ) : (
+          <>
+            <p className="jp-note mb-1">Leaving {NODES[prevId].n} — next stop:</p>
+            <p className="jp-travelbig">{NODES[nextId].n}</p>
+            <p className="flex flex-wrap items-center gap-2 mb-2">
+              {leg && leg.t === "y" ? (
+                <span className="jp-chip">⛴️ Spirit of Tasmania crossing — no driving today</span>
+              ) : (
+                <span className="jp-chip jp-mono">{leg ? fmt(leg.km) : 0} km · ~{Math.round(legL)} L</span>
+              )}
+              {leg && leg.t === "u" && (
+                <span className="jp-chip jp-mono" style={{ color: "var(--red)", borderColor: "var(--red)" }}>unsealed</span>
+              )}
+              {layN > 0 && <span className="jp-chip">🌙 {layN} {layN === 1 ? "night" : "nights"} here</span>}
+              {w && <span className="jp-chip jp-mono">{wxInfo(w.code).e} {Math.round(w.tmax)}°</span>}
+              {w && w.wind >= 40 && (
+                <span className="jp-chip" style={{ color: "var(--red)", borderColor: "var(--red)" }}>
+                  💨 wind to {Math.round(w.wind)} km/h — take care towing
+                </span>
+              )}
+              {!NODES[nextId].f && (
+                <span className="jp-chip" style={{ color: "var(--red)", borderColor: "var(--red)" }}>No fuel there</span>
+              )}
+            </p>
+            <p className="jp-note mb-2">
+              {fill ? (
+                <>⛽ Next fill-up: <strong>{NODES[stops[fillIdx]].n}</strong> — {fmt(fillKm)} km away,
+                {" "}~{Math.round(fill.litres)} L{fill.cost ? " (~$" + Math.round(fill.cost) + ")" : ""}.</>
+              ) : (
+                <>⛽ No more fill-ups needed this trip.</>
+              )}
+            </p>
+          </>
+        )}
+        <div className="jp-tprog mb-2" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
+             aria-label="Trip progress">
+          <div className="jp-tprogfill" style={{ width: pct + "%" }} />
+        </div>
+        <p className="jp-note mb-3">{tpos - 1} of {segs.length} legs done · {fmt(kmDone)} of {fmt(kmTotal)} km · {pct}%</p>
+        <div className="flex flex-wrap items-center gap-2">
+          {!doneAll ? (
+            <button type="button" className="jp-load" onClick={() => travelStep(1)}>
+              ✓ Arrived at {NODES[nextId].n}
+            </button>
+          ) : (
+            <button type="button" className="jp-load" onClick={endTravel}>Finish &amp; exit Travel Mode</button>
+          )}
+          {!doneAll && tpos > 1 && (
+            <button type="button" className="jp-preset" onClick={() => travelStep(-1)}>Back one</button>
+          )}
+          {!doneAll && (
+            <button type="button" className="jp-preset" onClick={() => setOpenIdx(tpos)}>Stop guide ↓</button>
+          )}
+          {!doneAll && (
+            <button type="button" className="jp-preset" onClick={endTravel}>End trip</button>
+          )}
+        </div>
+      </div>
+    );
+  })() : null;
 
   return (
     <div className="jp-root min-h-screen w-full">
@@ -2128,6 +2269,18 @@ export default function JourneyPro() {
         .jp-mapdiamond-red i { color: #fff; }
         .jp-mapdiamond-end { box-shadow: 0 0 0 3px var(--red), 0 2px 6px rgba(33,38,42,0.4); }
         .jp-key-p { background: var(--sign); opacity: 0.5; border-radius: 2px; }
+        .jp-travelcard { border: 2px solid var(--sign); }
+        .jp-travelbig { font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+          font-size: 1.9rem; line-height: 1.05; margin: 0 0 0.4rem; }
+        .jp-tprog { height: 10px; background: #E4E3D9; border-radius: 999px;
+          border: 1px solid var(--line); overflow: hidden; }
+        .jp-tprogfill { height: 100%; background: var(--sign); border-radius: 999px;
+          transition: width 300ms; }
+        .jp-startbtn { width: 100%; margin-top: 1.1rem; background: var(--amber); color: var(--ink);
+          border: 2px solid var(--ink); border-radius: 12px; padding: 0.7rem 1rem;
+          font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.05rem;
+          letter-spacing: 0.02em; cursor: pointer; }
+        .jp-startbtn:focus-visible { outline: 3px solid #fff; }
       `}</style>
 
       <header className="max-w-6xl mx-auto px-4 pt-8 pb-2">
@@ -2145,7 +2298,7 @@ export default function JourneyPro() {
           </div>
           <span className="jp-display text-sm font-semibold tracking-widest uppercase px-3 py-1 rounded-md"
                 style={{ background: "var(--amber)", color: "var(--ink)" }}>
-            Prototype v0.14
+            Prototype v0.15
           </span>
         </div>
       </header>
@@ -2498,6 +2651,8 @@ export default function JourneyPro() {
         </section>
 
         <section className="flex flex-col gap-4">
+          {travelCard}
+
           <div className="jp-sign p-6 md:p-8">
             <p className="jp-display uppercase tracking-widest text-sm font-semibold"
                style={{ color: "rgba(255,255,255,0.75)" }}>
@@ -2591,6 +2746,11 @@ export default function JourneyPro() {
                   <span className="jp-display font-bold text-2xl">${fmt(budget.total)}</span>
                 </div>
               </>
+            )}
+            {route.segs.length > 0 && !travel && (
+              <button type="button" className="jp-startbtn" onClick={startTravel}>
+                🚐 Start this trip — Travel Mode
+              </button>
             )}
           </div>
 
