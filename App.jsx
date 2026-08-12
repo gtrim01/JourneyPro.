@@ -24,17 +24,16 @@ if (typeof window !== "undefined" && !window.storage) {
 }
 
 /* ============================================================
-   JourneyPro — Prototype v0.12 (trip ideas)
-   · Trip ideas card: eight curated classics with a proper
-     pitch each — Big Lap (pick your start capital + direction),
-     Great Ocean Road, the Nullarbor, up the Centre, East Coast,
-     Tassie, the Outback Way, Matilda Country
-   · Weekender planner: pick trip length + departure point and
-     JourneyPro shapes a return trip to fit, lay days included
-   · Great Ocean Road & Limestone Coast join the network:
-     Torquay → Apollo Bay → Port Campbell → Warrnambool →
-     Port Fairy → Portland → Mt Gambier → Robe → the Coorong
-   · Plus everything from v0.11
+   JourneyPro — Prototype v0.13 (true cost from home)
+   · Every trip idea now departs from YOUR town: pick a home
+     base once, and each classic quotes the all-in figure —
+     positioning legs there (and optionally back) included,
+     with a split showing "getting there" vs "the route itself"
+   · Official route start marked with a red S pin (F for the
+     finish); positioning legs draw lighter on the map; Route
+     start / Route end tags in the leg sheet
+   · Return-home toggle for one-way vs round-trip quotes
+   · Plus everything from v0.12
    Curated prototype dataset — figures are realistic estimates
    ============================================================ */
 
@@ -1142,15 +1141,19 @@ const SKETCH_PTS = (() => {
   return pts;
 })();
 
-function RouteSketch({ route, waypoints, fills }) {
+function RouteSketch({ route, waypoints, fills, marks }) {
   const onRoute = new Set(route.stops);
   const pts = SKETCH_PTS;
   const runs = [];
   if (route.segs.length > 0) {
-    const kindOf = (t) => (t === "y" ? "ferry" : t === "u" ? "dirt" : "road");
-    let cur = [route.stops[0]], curKind = kindOf(route.segs[0].t);
+    const sIdx = marks ? route.stops.indexOf(marks.start) : -1;
+    const eIdx = marks ? route.stops.lastIndexOf(marks.end) : -1;
+    const hasMarks = sIdx >= 0 && eIdx >= 0;
+    const posOf = (i) => hasMarks && (i < sIdx || i >= eIdx);
+    const keyOf = (s, i) => (s.t === "y" ? "ferry" : s.t === "u" ? "dirt" : "road") + (posOf(i) ? "-pos" : "");
+    let cur = [route.stops[0]], curKind = keyOf(route.segs[0], 0);
     route.segs.forEach((s, i) => {
-      const kind = kindOf(s.t);
+      const kind = keyOf(s, i);
       const nxt = route.stops[i + 1];
       if (kind !== curKind) {
         runs.push({ ids: cur, kind: curKind });
@@ -1171,7 +1174,18 @@ function RouteSketch({ route, waypoints, fills }) {
         <line key={i} x1={pts[a][0]} y1={pts[a][1]} x2={pts[b][0]} y2={pts[b][1]}
               stroke="#CFCEC2" strokeWidth={1.5} strokeDasharray="4 4" strokeLinecap="round" />
       ))}
-      {runs.map((r, i) => r.kind === "ferry" ? (
+      {runs.map((r, i) => r.kind === "road-pos" || r.kind === "ferry-pos" || r.kind === "dirt-pos" ? (
+        r.kind === "road-pos" ? (
+          <polyline key={"run" + i} points={ptStr(r.ids)} fill="none" stroke="var(--sign)"
+                    strokeOpacity={0.45} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+        ) : r.kind === "ferry-pos" ? (
+          <polyline key={"run" + i} points={ptStr(r.ids)} fill="none" stroke="var(--sign)"
+                    strokeOpacity={0.6} strokeWidth={2} strokeDasharray="6 7" strokeLinecap="round" />
+        ) : (
+          <polyline key={"run" + i} points={ptStr(r.ids)} fill="none" stroke="var(--amber)"
+                    strokeOpacity={0.7} strokeWidth={2.5} strokeDasharray="8 6" strokeLinecap="round" />
+        )
+      ) : r.kind === "ferry" ? (
         <polyline key={"run" + i} points={ptStr(r.ids)} fill="none" stroke="var(--sign)"
                   strokeWidth={2.5} strokeDasharray="6 7" strokeLinejoin="round" strokeLinecap="round" />
       ) : r.kind === "dirt" ? (
@@ -1192,9 +1206,12 @@ function RouteSketch({ route, waypoints, fills }) {
       {Object.keys(SKETCH_PTS).map((id) => {
         const [x, y] = pts[id];
         if (waypoints.includes(id)) {
+          const isStart = marks && onRoute.has(id) && marks.start === id;
           return (
-            <rect key={id} x={x - 5.5} y={y - 5.5} width={11} height={11} fill="var(--amber)"
-                  stroke="var(--ink)" strokeWidth={2} transform={"rotate(45 " + x + " " + y + ")"} />
+            <rect key={id} x={x - 5.5} y={y - 5.5} width={11} height={11}
+                  fill={isStart ? "var(--red)" : "var(--amber)"}
+                  stroke={isStart ? "#fff" : "var(--ink)"} strokeWidth={2}
+                  transform={"rotate(45 " + x + " " + y + ")"} />
           );
         }
         if (fills[id]) {
@@ -1209,7 +1226,7 @@ function RouteSketch({ route, waypoints, fills }) {
   );
 }
 
-function RouteMap({ route, waypoints, fills, dayAt, stays }) {
+function RouteMap({ route, waypoints, fills, dayAt, stays, marks }) {
   const boxRef = useRef(null);
   const mapRef = useRef(null);
   const overlayRef = useRef(null);
@@ -1271,11 +1288,15 @@ function RouteMap({ route, waypoints, fills, dayAt, stays }) {
     /* The active route: cased green on bitumen, dashed green over Bass Strait,
        ink-cased dashed amber on unsealed Outback Way legs */
     if (route.segs.length > 0) {
-      const kindOf = (t) => (t === "y" ? "ferry" : t === "u" ? "dirt" : "road");
+      const sIdx = marks ? route.stops.indexOf(marks.start) : -1;
+      const eIdx = marks ? route.stops.lastIndexOf(marks.end) : -1;
+      const hasMarks = sIdx >= 0 && eIdx >= 0;
+      const posOf = (i) => hasMarks && (i < sIdx || i >= eIdx);
+      const keyOf = (s, i) => (s.t === "y" ? "ferry" : s.t === "u" ? "dirt" : "road") + (posOf(i) ? "-pos" : "");
       const runs = [];
-      let cur = [route.stops[0]], curKind = kindOf(route.segs[0].t);
+      let cur = [route.stops[0]], curKind = keyOf(route.segs[0], 0);
       route.segs.forEach((s, i) => {
-        const kind = kindOf(s.t);
+        const kind = keyOf(s, i);
         const nxt = route.stops[i + 1];
         if (kind !== curKind) {
           runs.push({ ids: cur, kind: curKind });
@@ -1287,11 +1308,16 @@ function RouteMap({ route, waypoints, fills, dayAt, stays }) {
       if (cur.length > 1) runs.push({ ids: cur, kind: curKind });
       runs.forEach((r) => {
         const path = r.ids.map((id) => COORDS[id]);
-        if (r.kind === "ferry") {
+        const pos = r.kind.endsWith("-pos");
+        const surf = r.kind.replace("-pos", "");
+        if (surf === "ferry") {
           L.polyline(path, { color: "#00674F", weight: 3, opacity: 0.9, dashArray: "7 9", interactive: false }).addTo(ov);
-        } else if (r.kind === "dirt") {
+        } else if (surf === "dirt") {
           L.polyline(path, { color: "#21262A", weight: 7, opacity: 0.9, lineJoin: "round", interactive: false }).addTo(ov);
           L.polyline(path, { color: "#F5B301", weight: 4, opacity: 1, dashArray: "10 8", interactive: false }).addTo(ov);
+        } else if (pos) {
+          /* positioning legs: getting to the route, and home again */
+          L.polyline(path, { color: "#00674F", weight: 3.5, opacity: 0.45, lineJoin: "round", interactive: false }).addTo(ov);
         } else {
           L.polyline(path, { color: "#FFFFFF", weight: 8, opacity: 0.9, lineJoin: "round", interactive: false }).addTo(ov);
           L.polyline(path, { color: "#00674F", weight: 4, opacity: 1, lineJoin: "round", interactive: false }).addTo(ov);
@@ -1310,10 +1336,13 @@ function RouteMap({ route, waypoints, fills, dayAt, stays }) {
       let marker;
       if (anchor) {
         const num = waypoints.indexOf(id) + 1;
+        const isStart = marks && on && marks.start === id;
+        const isEnd = marks && on && marks.end === id && marks.end !== marks.start;
+        const cls = "jp-mapdiamond" + (isStart ? " jp-mapdiamond-red" : isEnd ? " jp-mapdiamond-end" : "");
         marker = L.marker(COORDS[id], {
           icon: L.divIcon({
             className: "",
-            html: '<span class="jp-mapdiamond"><i>' + num + "</i></span>",
+            html: '<span class="' + cls + '"><i>' + (isStart ? "S" : isEnd ? "F" : num) + "</i></span>",
             iconSize: [24, 24],
             iconAnchor: [12, 12],
           }),
@@ -1344,7 +1373,7 @@ function RouteMap({ route, waypoints, fills, dayAt, stays }) {
     });
 
     fitTrip();
-  }, [mapState, route, waypoints, fills, dayAt, stays]);
+  }, [mapState, route, waypoints, fills, dayAt, stays, marks]);
 
   return (
     <div className="jp-card p-5">
@@ -1359,7 +1388,7 @@ function RouteMap({ route, waypoints, fills, dayAt, stays }) {
 
       {mapState === "sketch" ? (
         <>
-          <RouteSketch route={route} waypoints={waypoints} fills={fills} />
+          <RouteSketch route={route} waypoints={waypoints} fills={fills} marks={marks} />
           <p className="jp-note mt-2">
             Network sketch — the full interactive map (real roads, towns and zoom) loads on the
             live website with an internet connection.
@@ -1382,6 +1411,9 @@ function RouteMap({ route, waypoints, fills, dayAt, stays }) {
           stops · <span className="jp-key jp-key-f" aria-hidden /> fill-ups
           {route.segs.some((s) => s.t === "u") && (
             <> · <span className="jp-key jp-key-u" aria-hidden /> unsealed</>
+          )}
+          {marks && route.stops.indexOf(marks.start) > 0 && (
+            <> · <span className="jp-key jp-key-p" aria-hidden /> getting there</>
           )}
           {mapState === "live" ? " — tap any pin for details" : ""}
         </p>
@@ -1468,11 +1500,19 @@ function TripIdeas({ onLoad }) {
   const [openId, setOpenId] = useState(null);
   const [lapStart, setLapStart] = useState("adelaide");
   const [lapDir, setLapDir] = useState("acw");
-  const [wkStart, setWkStart] = useState("adelaide");
+  const [home, setHome] = useState("adelaide");
+  const [returnHome, setReturnHome] = useState(true);
   const [wkDays, setWkDays] = useState(4);
 
   const lapStops = useMemo(() => bigLapFrom(lapStart, lapDir), [lapStart, lapDir]);
-  const picks = useMemo(() => weekendPicks(wkStart, wkDays), [wkStart, wkDays]);
+  const picks = useMemo(() => weekendPicks(home, wkDays), [home, wkDays]);
+
+  const planFor = (official) => {
+    let wp = official.slice();
+    if (home !== wp[0]) wp = [home, ...wp];
+    if (returnHome && wp[wp.length - 1] !== home) wp = [...wp, home];
+    return wp;
+  };
 
   return (
     <div className="jp-card p-5">
@@ -1480,12 +1520,46 @@ function TripIdeas({ onLoad }) {
         <Compass size={18} style={{ color: "var(--sign)" }} aria-hidden />
         <span className="jp-eyebrow">Trip ideas</span>
       </div>
-      <p className="jp-note mb-1">Tap a classic for the pitch, load it, then make it yours.</p>
+      <p className="jp-note mb-2">
+        Pick your departing town — every idea below quotes the true, from-your-door cost,
+        positioning legs included.
+      </p>
+
+      <div className="jp-pickgrid mb-2">
+        <div>
+          <label className="block text-sm font-semibold mb-1" htmlFor="tripshome">Departing from</label>
+          <select id="tripshome" className="jp-field" value={home}
+                  onChange={(e) => setHome(e.target.value)}>
+            {STATE_GROUPS.map(([st, label]) => (
+              <optgroup key={st} label={label}>
+                {Object.entries(NODES).filter(([, n]) => n.st === st)
+                  .sort((a, b) =>
+                    (a[1].k === "city" ? 0 : 1) - (b[1].k === "city" ? 0 : 1) ||
+                    a[1].n.localeCompare(b[1].n))
+                  .map(([id, n]) => (
+                    <option key={id} value={id}>{n.n}</option>
+                  ))}
+              </optgroup>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-semibold mb-1">Round trip</label>
+          <button type="button" className="jp-preset" data-on={returnHome} aria-pressed={returnHome}
+                  onClick={() => setReturnHome(!returnHome)}>
+            {returnHome ? "Returning home at the end" : "One-way — ends where the route ends"}
+          </button>
+        </div>
+      </div>
 
       {TRIPS.map((t) => {
         const open = openId === t.id;
-        const stops = t.lap ? lapStops : t.stops;
-        const m = open ? measureTrip(stops) : null;
+        const official = t.lap ? lapStops : t.stops;
+        const wp = open ? planFor(official) : null;
+        const m = open ? measureTrip(wp) : null;
+        const off = open ? measureTrip(official) : null;
+        const posKm = m && off ? Math.max(0, m.km - off.km) : 0;
+        const marks = { start: official[0], end: official[official.length - 1] };
         return (
           <div key={t.id}>
             <button type="button" className="jp-triprow" aria-expanded={open}
@@ -1500,7 +1574,7 @@ function TripIdeas({ onLoad }) {
                 {t.lap && (
                   <div className="jp-pickgrid">
                     <div>
-                      <label className="block text-sm font-semibold mb-1" htmlFor="lapstart">Start from</label>
+                      <label className="block text-sm font-semibold mb-1" htmlFor="lapstart">Join the ring at</label>
                       <select id="lapstart" className="jp-field" value={lapStart}
                               onChange={(e) => setLapStart(e.target.value)}>
                         {LAP_RING.map((id) => <option key={id} value={id}>{NODES[id].n}</option>)}
@@ -1517,22 +1591,28 @@ function TripIdeas({ onLoad }) {
                     </div>
                   </div>
                 )}
-                {m && m.ok && (
+                {m && m.ok && off && off.ok && (
                   <p className="flex flex-wrap items-center gap-2">
-                    <span className="jp-chip jp-mono">≈ {fmt(m.km)} km</span>
+                    <span className="jp-chip jp-mono">≈ {fmt(m.km)} km all-in</span>
+                    {posKm > 0 && (
+                      <span className="jp-chip jp-mono">
+                        getting there{returnHome ? " & back" : ""}: {fmt(posKm)} km
+                      </span>
+                    )}
+                    {posKm > 0 && (
+                      <span className="jp-chip jp-mono">the route itself: {fmt(off.km)} km</span>
+                    )}
                     {m.dirt > 0 && (
                       <span className="jp-chip jp-mono" style={{ color: "var(--red)", borderColor: "var(--red)" }}>
                         {fmt(m.dirt)} km unsealed
                       </span>
                     )}
                     {m.ferry && <span className="jp-chip">⛴️ ferry crossing</span>}
-                    {t.lap && stops.length > 1 && (
-                      <span className="jp-chip">First leg: {NODES[stops[0]].n} → {NODES[stops[1]].n}</span>
-                    )}
                   </p>
                 )}
                 <p>
-                  <button type="button" className="jp-load" onClick={() => onLoad(stops)}>
+                  <button type="button" className="jp-load"
+                          onClick={() => onLoad(wp, {}, marks)}>
                     Load this trip
                   </button>
                 </p>
@@ -1545,8 +1625,8 @@ function TripIdeas({ onLoad }) {
       <div className="mt-4 pt-3" style={{ borderTop: "1.5px solid var(--line)" }}>
         <span className="jp-eyebrow">Short on time?</span>
         <p className="jp-note mt-1 mb-2">
-          Pick how long you&rsquo;ve got and where from — JourneyPro shapes a return trip
-          to fit, lay days at the far end included.
+          Pick how long you&rsquo;ve got — JourneyPro shapes a return trip from {NODES[home].n} to fit,
+          lay days at the far end included.
         </p>
         <div className="flex flex-wrap gap-2 mb-2" role="group" aria-label="Trip length">
           {WK_LENGTHS.map((w) => (
@@ -1556,28 +1636,13 @@ function TripIdeas({ onLoad }) {
             </button>
           ))}
         </div>
-        <label className="block text-sm font-semibold mb-1" htmlFor="wkstart">Departing from</label>
-        <select id="wkstart" className="jp-field" value={wkStart}
-                onChange={(e) => setWkStart(e.target.value)}>
-          {STATE_GROUPS.map(([st, label]) => (
-            <optgroup key={st} label={label}>
-              {Object.entries(NODES).filter(([, n]) => n.st === st)
-                .sort((a, b) =>
-                  (a[1].k === "city" ? 0 : 1) - (b[1].k === "city" ? 0 : 1) ||
-                  a[1].n.localeCompare(b[1].n))
-                .map(([id, n]) => (
-                  <option key={id} value={id}>{n.n}</option>
-                ))}
-            </optgroup>
-          ))}
-        </select>
         {picks.length === 0 ? (
           <p className="jp-note mt-2">No tidy short loops from out here — try a longer trip length.</p>
         ) : (
           <div className="flex flex-col gap-2 mt-2">
             {picks.map((p) => (
               <button key={p.id} type="button" className="jp-wkpick"
-                      onClick={() => onLoad([wkStart, p.id, wkStart], p.lay > 0 ? { [p.id]: p.lay } : {})}>
+                      onClick={() => onLoad([home, p.id, home], p.lay > 0 ? { [p.id]: p.lay } : {})}>
                 <span className="font-semibold">{NODES[p.id].n}</span>
                 <span className="jp-mono text-sm">
                   {fmt(p.km)} km round{p.lay > 0 ? " · " + p.lay + (p.lay === 1 ? " lay night" : " lay nights") : ""}
@@ -1590,7 +1655,6 @@ function TripIdeas({ onLoad }) {
     </div>
   );
 }
-
 
 export default function JourneyPro() {
   const [makeIdx, setMakeIdx] = useState(1);
@@ -1622,6 +1686,7 @@ export default function JourneyPro() {
   const [savedTrips, setSavedTrips] = useState([]);
   const [storageOk, setStorageOk] = useState(true);
   const [stays, setStays] = useState({});
+  const [tripMarks, setTripMarks] = useState(null);
 
   const make = VEHICLE_DATA[makeIdx];
   const model = make.models[Math.min(modelIdx, make.models.length - 1)];
@@ -1764,7 +1829,7 @@ export default function JourneyPro() {
   const tripSnapshot = () => ({
     waypoints, towType, loadPct, price,
     vehMode, customVeh, makeIdx, modelIdx, variantIdx,
-    vanMode, customVan, vanMakeIdx, vanModelIdx, trSizeIdx, trAtm, stays,
+    vanMode, customVan, vanMakeIdx, vanModelIdx, trSizeIdx, trAtm, stays, tripMarks,
   });
   const applySnapshot = (s) => {
     if (!s || !Array.isArray(s.waypoints)) return;
@@ -1785,12 +1850,14 @@ export default function JourneyPro() {
     setTrSizeIdx(tsi);
     setTrAtm(s.trAtm ?? TRAILER_SIZES[tsi].atms[0]);
     setStays(s.stays && typeof s.stays === "object" ? s.stays : {});
+    setTripMarks(s.tripMarks || null);
     setOpenIdx(null);
     setWx({ status: "idle", byId: {} });
   };
-  const loadSuggested = (stops, staysObj = {}) => {
+  const loadSuggested = (stops, staysObj = {}, marks = null) => {
     setWaypoints(stops.filter((id) => NODES[id]));
     setStays(staysObj);
+    setTripMarks(marks);
     setOpenIdx(null);
     setWx({ status: "idle", byId: {} });
   };
@@ -2055,6 +2122,10 @@ export default function JourneyPro() {
           width: 100%; background: var(--paper); border: 1.5px solid var(--line); border-radius: 10px;
           padding: 0.55rem 0.8rem; font: inherit; color: inherit; cursor: pointer; text-align: left; }
         .jp-wkpick:focus-visible { outline: 3px solid var(--amber); }
+        .jp-mapdiamond-red { background: var(--red); border-color: #fff; }
+        .jp-mapdiamond-red i { color: #fff; }
+        .jp-mapdiamond-end { box-shadow: 0 0 0 3px var(--red), 0 2px 6px rgba(33,38,42,0.4); }
+        .jp-key-p { background: var(--sign); opacity: 0.5; border-radius: 2px; }
       `}</style>
 
       <header className="max-w-6xl mx-auto px-4 pt-8 pb-2">
@@ -2072,7 +2143,7 @@ export default function JourneyPro() {
           </div>
           <span className="jp-display text-sm font-semibold tracking-widest uppercase px-3 py-1 rounded-md"
                 style={{ background: "var(--amber)", color: "var(--ink)" }}>
-            Prototype v0.12
+            Prototype v0.13
           </span>
         </div>
       </header>
@@ -2522,7 +2593,7 @@ export default function JourneyPro() {
           </div>
 
           <RouteMap route={route} waypoints={waypoints} fills={plan.fills}
-                    dayAt={plan.dayAt} stays={stays} />
+                    dayAt={plan.dayAt} stays={stays} marks={tripMarks} />
 
           {route.segs.length > 0 && (
             <div className="jp-card p-5">
@@ -2588,6 +2659,12 @@ export default function JourneyPro() {
                         <span className={isMajor ? "truncate font-bold" : "truncate font-medium"}>{node.n}</span>
                         {node.k === "rh" && <span className="jp-tag">Roadhouse</span>}
                         {!node.f && <span className="jp-tag" style={{ color: "var(--red)", borderColor: "var(--red)" }}>No fuel</span>}
+                        {tripMarks && tripMarks.start === id && i === route.stops.indexOf(tripMarks.start) && (
+                          <span className="jp-tag" style={{ color: "#fff", background: "var(--red)", borderColor: "var(--red)" }}>Route start</span>
+                        )}
+                        {tripMarks && tripMarks.end === id && tripMarks.end !== tripMarks.start && i === route.stops.lastIndexOf(tripMarks.end) && (
+                          <span className="jp-tag" style={{ color: "var(--red)", borderColor: "var(--red)" }}>Route end</span>
+                        )}
                       </span>
                       <span className="flex items-center gap-2 flex-none">
                         {(stays[id] || 0) > 0 && (
