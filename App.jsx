@@ -24,16 +24,13 @@ if (typeof window !== "undefined" && !window.storage) {
 }
 
 /* ============================================================
-   JourneyPro — Prototype v0.13 (true cost from home)
-   · Every trip idea now departs from YOUR town: pick a home
-     base once, and each classic quotes the all-in figure —
-     positioning legs there (and optionally back) included,
-     with a split showing "getting there" vs "the route itself"
-   · Official route start marked with a red S pin (F for the
-     finish); positioning legs draw lighter on the map; Route
-     start / Route end tags in the leg sheet
-   · Return-home toggle for one-way vs round-trip quotes
-   · Plus everything from v0.12
+   JourneyPro — Prototype v0.14 (departing-from, everywhere)
+   · The Departing from + Round trip controls now live inside
+     EVERY trip idea's panel (and stay at the top of the card) —
+     one shared setting, impossible to miss
+   · Cost chips name the town: "from St Helens: ≈ 16,400 km
+     all-in" — no doubt whose door the quote is from
+   · Plus everything from v0.13
    Curated prototype dataset — figures are realistic estimates
    ============================================================ */
 
@@ -1514,6 +1511,35 @@ function TripIdeas({ onLoad }) {
     return wp;
   };
 
+  const homeControls = (suffix) => (
+    <div className="jp-pickgrid mb-2">
+      <div>
+        <label className="block text-sm font-semibold mb-1" htmlFor={"home-" + suffix}>Departing from</label>
+        <select id={"home-" + suffix} className="jp-field" value={home}
+                onChange={(e) => setHome(e.target.value)}>
+          {STATE_GROUPS.map(([st, label]) => (
+            <optgroup key={st} label={label}>
+              {Object.entries(NODES).filter(([, n]) => n.st === st)
+                .sort((a, b) =>
+                  (a[1].k === "city" ? 0 : 1) - (b[1].k === "city" ? 0 : 1) ||
+                  a[1].n.localeCompare(b[1].n))
+                .map(([id, n]) => (
+                  <option key={id} value={id}>{n.n}</option>
+                ))}
+            </optgroup>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-semibold mb-1">Round trip</label>
+        <button type="button" className="jp-preset" data-on={returnHome} aria-pressed={returnHome}
+                onClick={() => setReturnHome(!returnHome)}>
+          {returnHome ? "Returning home at the end" : "One-way — ends where the route ends"}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="jp-card p-5">
       <div className="flex items-center gap-2 mb-1">
@@ -1525,32 +1551,7 @@ function TripIdeas({ onLoad }) {
         positioning legs included.
       </p>
 
-      <div className="jp-pickgrid mb-2">
-        <div>
-          <label className="block text-sm font-semibold mb-1" htmlFor="tripshome">Departing from</label>
-          <select id="tripshome" className="jp-field" value={home}
-                  onChange={(e) => setHome(e.target.value)}>
-            {STATE_GROUPS.map(([st, label]) => (
-              <optgroup key={st} label={label}>
-                {Object.entries(NODES).filter(([, n]) => n.st === st)
-                  .sort((a, b) =>
-                    (a[1].k === "city" ? 0 : 1) - (b[1].k === "city" ? 0 : 1) ||
-                    a[1].n.localeCompare(b[1].n))
-                  .map(([id, n]) => (
-                    <option key={id} value={id}>{n.n}</option>
-                  ))}
-              </optgroup>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-semibold mb-1">Round trip</label>
-          <button type="button" className="jp-preset" data-on={returnHome} aria-pressed={returnHome}
-                  onClick={() => setReturnHome(!returnHome)}>
-            {returnHome ? "Returning home at the end" : "One-way — ends where the route ends"}
-          </button>
-        </div>
-      </div>
+      {homeControls("top")}
 
       {TRIPS.map((t) => {
         const open = openId === t.id;
@@ -1571,6 +1572,7 @@ function TripIdeas({ onLoad }) {
             {open && (
               <div className="jp-guide" style={{ margin: "0 0 0.6rem 0" }}>
                 <p>{t.blurb}</p>
+                {homeControls(t.id)}
                 {t.lap && (
                   <div className="jp-pickgrid">
                     <div>
@@ -1593,7 +1595,7 @@ function TripIdeas({ onLoad }) {
                 )}
                 {m && m.ok && off && off.ok && (
                   <p className="flex flex-wrap items-center gap-2">
-                    <span className="jp-chip jp-mono">≈ {fmt(m.km)} km all-in</span>
+                    <span className="jp-chip jp-mono">from {NODES[home].n}: ≈ {fmt(m.km)} km all-in</span>
                     {posKm > 0 && (
                       <span className="jp-chip jp-mono">
                         getting there{returnHome ? " & back" : ""}: {fmt(posKm)} km
@@ -2143,7 +2145,7 @@ export default function JourneyPro() {
           </div>
           <span className="jp-display text-sm font-semibold tracking-widest uppercase px-3 py-1 rounded-md"
                 style={{ background: "var(--amber)", color: "var(--ink)" }}>
-            Prototype v0.13
+            Prototype v0.14
           </span>
         </div>
       </header>
