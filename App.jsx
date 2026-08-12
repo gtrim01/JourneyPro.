@@ -24,15 +24,18 @@ if (typeof window !== "undefined" && !window.storage) {
 }
 
 /* ============================================================
-   JourneyPro — Prototype v0.15 (Travel Mode)
-   · Start this trip → the app becomes an on-road companion:
-     day counter, next stop with leg km + litres, next fill-up
-     (how far, how many litres, rough cost), lay-night and
-     no-fuel flags, arrival weather with a strong-wind towing
-     warning, live progress bar, Arrived / Back / End controls
-   · Travel state persists on-device — close the app at Marla,
-     open it at Marla
-   · Plus everything from v0.14
+   JourneyPro — Prototype v0.16 (Trip Story)
+   · One tap turns any trip into a shareable branded card:
+     your route drawn across Australia, the big diesel figure,
+     distance / fuel / fill-ups / days, your rig, and the
+     JourneyPro tagline — sized for Facebook (1080×1350)
+   · Share straight to the phone's share sheet where supported,
+     or download the PNG; button lives on the trip sheet and
+     in Travel Mode
+   · Fixes: Travel Mode day chip now tracks your PLAN day and
+     advances as you tick off stops; Stop guide button scrolls
+     you to the opened guide
+   · Plus everything from v0.15
    Curated prototype dataset — figures are realistic estimates
    ============================================================ */
 
@@ -1859,6 +1862,213 @@ export default function JourneyPro() {
     setOpenIdx(null);
     setWx({ status: "idle", byId: {} });
   };
+  const [story, setStory] = useState(null); /* dataURL of the generated card */
+  const [storyBusy, setStoryBusy] = useState(false);
+
+  const makeStory = async () => {
+    if (typeof document === "undefined" || route.segs.length === 0 || storyBusy) return;
+    setStoryBusy(true);
+    try {
+      try {
+        await Promise.all([
+          document.fonts.load('700 72px "Barlow Condensed"'),
+          document.fonts.load('600 44px "IBM Plex Mono"'),
+          document.fonts.load('400 30px "Archivo"'),
+        ]);
+      } catch (e) { /* fall back to system fonts */ }
+
+      const W = 1080, H = 1350;
+      const cv = document.createElement("canvas");
+      cv.width = W; cv.height = H;
+      const c = cv.getContext("2d");
+      const SIGN = "#00674F", AMBER = "#F5B301", INK = "#21262A",
+            PAPER = "#F5F4EE", MUTED = "#6B7069", LINE = "#DDDCD2", RED = "#C03B2B";
+      const BC = '"Barlow Condensed", sans-serif';
+      const Mono = '"IBM Plex Mono", monospace';
+      const Arc = '"Archivo", system-ui, sans-serif';
+      const rr = (x, y, w, h, r) => {
+        c.beginPath();
+        c.moveTo(x + r, y);
+        c.arcTo(x + w, y, x + w, y + h, r);
+        c.arcTo(x + w, y + h, x, y + h, r);
+        c.arcTo(x, y + h, x, y, r);
+        c.arcTo(x, y, x + w, y, r);
+        c.closePath();
+      };
+
+      /* paper */
+      c.fillStyle = PAPER; c.fillRect(0, 0, W, H);
+
+      /* green sign header */
+      rr(40, 40, 1000, 310, 26); c.fillStyle = SIGN; c.fill();
+      rr(52, 52, 976, 286, 18); c.strokeStyle = "rgba(255,255,255,0.5)"; c.lineWidth = 3; c.stroke();
+      c.textBaseline = "alphabetic";
+      c.font = "700 44px " + BC;
+      c.fillStyle = "#FFFFFF"; c.fillText("JOURNEY", 84, 118);
+      c.fillStyle = AMBER; c.fillText("PRO", 84 + c.measureText("JOURNEY").width, 118);
+      c.font = "400 24px " + Mono; c.fillStyle = "rgba(255,255,255,0.75)";
+      const url = "journey-pro-jet.vercel.app";
+      c.fillText(url, 996 - c.measureText(url).width, 114);
+
+      const title = startId === endId
+        ? "Loop from " + NODES[startId].n
+        : NODES[startId].n + " → " + NODES[endId].n;
+      let tSize = 76;
+      c.font = "700 " + tSize + "px " + BC;
+      while (c.measureText(title).width > 912 && tSize > 34) {
+        tSize -= 4; c.font = "700 " + tSize + "px " + BC;
+      }
+      c.fillStyle = "#FFFFFF"; c.fillText(title, 84, 230);
+      const statesN = new Set(route.stops.map((id) => NODES[id].st)).size;
+      const ferry = route.segs.some((s) => s.t === "y");
+      const dirtKm = route.segs.reduce((a, s) => a + (s.t === "u" ? s.km : 0), 0);
+      c.font = "600 30px " + BC; c.fillStyle = "rgba(255,255,255,0.9)";
+      c.fillText(
+        "~" + plan.days + " driving days · " + statesN + (statesN === 1 ? " state" : " states & territories") +
+        (ferry ? " · ferry crossing" : "") + (dirtKm > 0 ? " · " + fmt(dirtKm) + " km dirt" : ""),
+        84, 296
+      );
+
+      /* route sketch */
+      const mx = 60, my = 392, sc = 960 / SK_W; /* 640→960 wide, 470→705 tall */
+      const P = (id) => [mx + SKETCH_PTS[id][0] * sc, my + SKETCH_PTS[id][1] * sc];
+      c.lineCap = "round"; c.lineJoin = "round";
+      c.strokeStyle = "#CFCEC2"; c.lineWidth = 2.2; c.setLineDash([6, 7]);
+      EDGES.forEach(([a, b]) => {
+        const pa = P(a), pb = P(b);
+        c.beginPath(); c.moveTo(pa[0], pa[1]); c.lineTo(pb[0], pb[1]); c.stroke();
+      });
+      c.setLineDash([]);
+      /* route runs: mirror the sketch's road / ferry / dirt / positioning styling */
+      const stops = route.stops, segs = route.segs;
+      const sIdx = tripMarks ? stops.indexOf(tripMarks.start) : -1;
+      const eIdx = tripMarks ? stops.lastIndexOf(tripMarks.end) : -1;
+      const hasMarks = sIdx >= 0 && eIdx >= 0;
+      const posOf = (i) => hasMarks && (i < sIdx || i >= eIdx);
+      const keyOf = (s, i) => (s.t === "y" ? "ferry" : s.t === "u" ? "dirt" : "road") + (posOf(i) ? "-pos" : "");
+      const runs = [];
+      let cur = [stops[0]], curKind = keyOf(segs[0], 0);
+      segs.forEach((s, i) => {
+        const kind = keyOf(s, i), nxt = stops[i + 1];
+        if (kind !== curKind) { runs.push({ ids: cur, kind: curKind }); cur = [stops[i]]; curKind = kind; }
+        cur.push(nxt);
+      });
+      if (cur.length > 1) runs.push({ ids: cur, kind: curKind });
+      const path = (ids) => {
+        c.beginPath();
+        ids.forEach((id, i) => { const p = P(id); i === 0 ? c.moveTo(p[0], p[1]) : c.lineTo(p[0], p[1]); });
+      };
+      runs.forEach((r) => {
+        const pos = r.kind.endsWith("-pos"), surf = r.kind.replace("-pos", "");
+        if (surf === "ferry") {
+          c.strokeStyle = SIGN; c.lineWidth = 3.5; c.setLineDash([9, 10]);
+          c.globalAlpha = pos ? 0.6 : 0.95; path(r.ids); c.stroke();
+        } else if (surf === "dirt") {
+          c.setLineDash([]); c.strokeStyle = INK; c.lineWidth = 8; c.globalAlpha = pos ? 0.5 : 0.95;
+          path(r.ids); c.stroke();
+          c.strokeStyle = AMBER; c.lineWidth = 4.5; c.setLineDash([14, 10]); path(r.ids); c.stroke();
+        } else if (pos) {
+          c.setLineDash([]); c.strokeStyle = SIGN; c.globalAlpha = 0.45; c.lineWidth = 4;
+          path(r.ids); c.stroke();
+        } else {
+          c.setLineDash([]); c.globalAlpha = 1;
+          c.strokeStyle = "#FFFFFF"; c.lineWidth = 9.5; path(r.ids); c.stroke();
+          c.strokeStyle = SIGN; c.lineWidth = 5.5; path(r.ids); c.stroke();
+        }
+        c.globalAlpha = 1; c.setLineDash([]);
+      });
+      const onRoute = new Set(stops);
+      Object.keys(SKETCH_PTS).forEach((id) => {
+        const [x, y] = P(id);
+        if (waypoints.includes(id)) {
+          const isStart = tripMarks && onRoute.has(id) && tripMarks.start === id;
+          c.save(); c.translate(x, y); c.rotate(Math.PI / 4);
+          c.fillStyle = isStart ? RED : AMBER;
+          c.strokeStyle = isStart ? "#FFFFFF" : INK; c.lineWidth = 3;
+          c.fillRect(-8.5, -8.5, 17, 17); c.strokeRect(-8.5, -8.5, 17, 17);
+          c.restore();
+        } else if (plan.fills[id] && onRoute.has(id)) {
+          c.beginPath(); c.arc(x, y, 7, 0, Math.PI * 2);
+          c.fillStyle = AMBER; c.fill(); c.strokeStyle = INK; c.lineWidth = 2.5; c.stroke();
+        } else if (onRoute.has(id)) {
+          c.beginPath(); c.arc(x, y, 5.5, 0, Math.PI * 2);
+          c.fillStyle = SIGN; c.fill(); c.strokeStyle = "#FFFFFF"; c.lineWidth = 2.5; c.stroke();
+        } else {
+          c.beginPath(); c.arc(x, y, 3, 0, Math.PI * 2);
+          c.fillStyle = "#C4C3B6"; c.fill();
+        }
+      });
+
+      /* hero fuel figure on amber */
+      const fuelCost = Math.round(Object.values(plan.fills).reduce((a, f) => a + (f.cost || 0), 0));
+      rr(60, 1108, 960, 104, 18); c.fillStyle = AMBER; c.fill();
+      c.strokeStyle = INK; c.lineWidth = 3; rr(60, 1108, 960, 104, 18); c.stroke();
+      c.fillStyle = INK; c.font = "700 62px " + BC;
+      const hero = "$" + fmt(fuelCost) + " in " + FUEL_META[vehicle.fuel].label.toLowerCase();
+      c.fillText(hero, 92, 1180);
+      c.font = "600 26px " + BC;
+      const heroSub = "at the pump, hitched";
+      c.fillText(heroSub, 988 - c.measureText(heroSub).width, 1176);
+
+      /* stat row */
+      const statY = 1256;
+      const stat = (x, label, value) => {
+        c.font = "600 22px " + BC; c.fillStyle = MUTED;
+        try { c.letterSpacing = "3px"; } catch (e) {}
+        c.fillText(label.toUpperCase(), x, statY - 44);
+        try { c.letterSpacing = "0px"; } catch (e) {}
+        c.font = "600 40px " + Mono; c.fillStyle = INK;
+        c.fillText(value, x, statY);
+      };
+      stat(92, "Distance", fmt(plan.km) + " km");
+      stat(372, "Fuel", Math.round(plan.litres) + " L");
+      stat(608, "Fill-ups", String(Object.keys(plan.fills).length));
+      stat(800, "Days", "~" + plan.days);
+
+      /* rig + footer */
+      const rig = (vehMode === "custom" ? vehicle.v : make.make + " " + model.model) +
+        (load.weight > 0 ? "  +  " + load.desc + (load.sub ? " · " + load.sub : "") : "");
+      c.font = "400 27px " + Arc; c.fillStyle = INK;
+      c.fillText("🚙 " + rig, 92, 1300);
+      if (travel) {
+        let kd = 0, kt = 0;
+        segs.forEach((s, i) => { if (s.t !== "y") { kt += s.km; if (i < Math.min(travel.pos, stops.length) - 1) kd += s.km; } });
+        const pc = kt > 0 ? Math.round((kd / kt) * 100) : 0;
+        const dayN = plan.dayAt[Math.max(0, Math.min(travel.pos, stops.length) - 1)] || 1;
+        const chip = "Day " + dayN + " · " + pc + "% done";
+        c.font = "700 27px " + BC; c.fillStyle = SIGN;
+        c.fillText(chip, 988 - c.measureText(chip).width, 1300);
+      }
+      c.font = "700 30px " + BC; c.fillStyle = SIGN;
+      const tag = "Plan the trip before you tow.";
+      c.fillText(tag, (W - c.measureText(tag).width) / 2, 1338);
+
+      setStory(cv.toDataURL("image/png"));
+    } finally {
+      setStoryBusy(false);
+    }
+  };
+
+  const shareStory = async () => {
+    if (!story) return;
+    const fname = "journeypro-" + startId + "-" + endId + ".png";
+    try {
+      const blob = await (await fetch(story)).blob();
+      const file = new File([blob], fname, { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: "My JourneyPro trip",
+          text: (startId === endId ? "Loop from " + NODES[startId].n : NODES[startId].n + " → " + NODES[endId].n) +
+            " — planned with JourneyPro, free at journey-pro-jet.vercel.app",
+        });
+        return;
+      }
+    } catch (e) { /* fall through to download hint */ }
+    const a = document.createElement("a");
+    a.href = story; a.download = fname; a.click();
+  };
+
   const persistTravel = async (t) => {
     if (typeof window === "undefined" || !window.storage) return;
     try {
@@ -2045,7 +2255,8 @@ export default function JourneyPro() {
     const prevId = stops[Math.max(0, tpos - 1)];
     const leg = doneAll ? null : segs[tpos - 1];
     const legL = leg && leg.t !== "y" ? (leg.km * vehicle.real * load.factor * TERR[leg.t]) / 100 : 0;
-    const dayN = Math.max(1, Math.floor((Date.now() - new Date(travel.startedISO).getTime()) / 86400000) + 1);
+    const hereIdx = Math.max(0, Math.min(tpos, stops.length) - 1);
+    const dayN = plan.dayAt[hereIdx] || 1; /* plan day at the stop you've reached */
     let kmDone = 0, kmTotal = 0;
     segs.forEach((s, i) => { if (s.t !== "y") { kmTotal += s.km; if (i < tpos - 1) kmDone += s.km; } });
     const pct = kmTotal > 0 ? Math.round((kmDone / kmTotal) * 100) : 0;
@@ -2060,7 +2271,7 @@ export default function JourneyPro() {
       <div className="jp-card p-5 jp-travelcard">
         <div className="flex items-center justify-between gap-2 mb-2">
           <span className="jp-eyebrow">🚐 Travel Mode</span>
-          <span className="jp-chip jp-mono">Day {dayN} on the road</span>
+          <span className="jp-chip jp-mono">Day {dayN} of ~{plan.days}</span>
         </div>
         {doneAll ? (
           <>
@@ -2118,11 +2329,23 @@ export default function JourneyPro() {
             <button type="button" className="jp-preset" onClick={() => travelStep(-1)}>Back one</button>
           )}
           {!doneAll && (
-            <button type="button" className="jp-preset" onClick={() => setOpenIdx(tpos)}>Stop guide ↓</button>
+            <button type="button" className="jp-preset"
+                    onClick={() => {
+                      setOpenIdx(tpos);
+                      if (typeof document !== "undefined") {
+                        setTimeout(() => {
+                          const el = document.getElementById("jp-stop-" + tpos);
+                          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }, 80);
+                      }
+                    }}>Stop guide ↓</button>
           )}
           {!doneAll && (
             <button type="button" className="jp-preset" onClick={endTravel}>End trip</button>
           )}
+          <button type="button" className="jp-preset" onClick={makeStory} disabled={storyBusy}>
+            📸 Share
+          </button>
         </div>
       </div>
     );
@@ -2281,6 +2504,17 @@ export default function JourneyPro() {
           font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.05rem;
           letter-spacing: 0.02em; cursor: pointer; }
         .jp-startbtn:focus-visible { outline: 3px solid #fff; }
+        .jp-sharebtn { width: 100%; margin-top: 0.6rem; background: transparent; color: #fff;
+          border: 2px solid rgba(255,255,255,0.85); border-radius: 12px; padding: 0.6rem 1rem;
+          font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1rem;
+          letter-spacing: 0.02em; cursor: pointer; }
+        .jp-sharebtn:focus-visible { outline: 3px solid var(--amber); }
+        .jp-sharebtn:disabled { opacity: 0.6; cursor: wait; }
+        .jp-modal { position: fixed; inset: 0; background: rgba(33,38,42,0.6); z-index: 60;
+          display: flex; align-items: center; justify-content: center; padding: 1rem; }
+        .jp-modalcard { max-width: 420px; width: 100%; max-height: 92vh; overflow: auto; }
+        .jp-modalimg { width: 100%; height: auto; display: block; border-radius: 12px;
+          border: 1.5px solid var(--line); }
       `}</style>
 
       <header className="max-w-6xl mx-auto px-4 pt-8 pb-2">
@@ -2298,7 +2532,7 @@ export default function JourneyPro() {
           </div>
           <span className="jp-display text-sm font-semibold tracking-widest uppercase px-3 py-1 rounded-md"
                 style={{ background: "var(--amber)", color: "var(--ink)" }}>
-            Prototype v0.15
+            Prototype v0.16
           </span>
         </div>
       </header>
@@ -2653,6 +2887,22 @@ export default function JourneyPro() {
         <section className="flex flex-col gap-4">
           {travelCard}
 
+          {story && (
+            <div className="jp-modal" role="dialog" aria-modal="true" aria-label="Your trip card"
+                 onClick={(e) => { if (e.target === e.currentTarget) setStory(null); }}>
+              <div className="jp-modalcard jp-card p-4">
+                <img className="jp-modalimg" src={story} alt="JourneyPro trip card ready to share" />
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  <button type="button" className="jp-load" onClick={shareStory}>Share…</button>
+                  <a className="jp-preset" href={story}
+                     download={"journeypro-" + startId + "-" + endId + ".png"}>Download</a>
+                  <button type="button" className="jp-preset" onClick={() => setStory(null)}>Close</button>
+                </div>
+                <p className="jp-note mt-2">Post it to the group — every card carries the map.</p>
+              </div>
+            </div>
+          )}
+
           <div className="jp-sign p-6 md:p-8">
             <p className="jp-display uppercase tracking-widest text-sm font-semibold"
                style={{ color: "rgba(255,255,255,0.75)" }}>
@@ -2752,6 +3002,11 @@ export default function JourneyPro() {
                 🚐 Start this trip — Travel Mode
               </button>
             )}
+            {route.segs.length > 0 && (
+              <button type="button" className="jp-sharebtn" onClick={makeStory} disabled={storyBusy}>
+                {storyBusy ? "Building your card…" : "📸 Share this trip"}
+              </button>
+            )}
           </div>
 
           <RouteMap route={route} waypoints={waypoints} fills={plan.fills}
@@ -2807,7 +3062,7 @@ export default function JourneyPro() {
                 const isMajor = waypoints.includes(id);
                 const open = openIdx === i;
                 return (
-                  <div key={id + "-" + i}>
+                  <div key={id + "-" + i} id={"jp-stop-" + i}>
                     {(i === 0 || plan.dayAt[i] !== plan.dayAt[i - 1]) && (
                       <p className="jp-display mt-1" style={{ color: "var(--sign)", fontWeight: 700,
                          letterSpacing: "0.12em", fontSize: "0.75rem", textTransform: "uppercase" }}>
