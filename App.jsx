@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
-import { AlertTriangle, Fuel, Caravan, Route, Info, X, Plus, Clock, ChevronDown, ExternalLink, CloudSun, Wind, Loader2 } from "lucide-react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { AlertTriangle, Fuel, Caravan, Route, Info, X, Plus, Clock, ChevronDown, ExternalLink, CloudSun, Wind, Loader2, Map as MapIcon } from "lucide-react";
 
 /* On the real web there's no preview storage API — back the same interface
    with the browser's localStorage so saved trips keep working. */
@@ -24,12 +24,15 @@ if (typeof window !== "undefined" && !window.storage) {
 }
 
 /* ============================================================
-   JourneyPro — Prototype v0.8 (installable release)
-   · Lay nights at any stop (budget + ~40 km/day local fuel)
-   · Places grouped by state (no Adelaide-centric labels)
-   · 12 new stops: Hume corridor, Broken Hill run, Devils
-     Marbles, Victor Harbor
-   · Plus everything from v0.6
+   JourneyPro — Prototype v0.10 (the Big Lap + Tasmania)
+   · 48 new stops: Sydney→Brisbane coast, Gold Coast, the full
+     Bruce Hwy to Cairns, outback Flinders & Barkly Hwys
+     (closing the Big Lap), Canberra, Geelong — and Tasmania:
+     18 stops looping the island
+   · Spirit of Tasmania ferry: Geelong ⇄ Devonport as a proper
+     leg — no fuel burned, +1 travel day, dashed on the map,
+     fare guidance shown (fares not in totals)
+   · Plus everything from v0.9 (route map)
    Curated prototype dataset — figures are realistic estimates
    ============================================================ */
 
@@ -247,7 +250,7 @@ function vanProfile(style, len) {
   return 0.18 + Math.max(0, Math.min(0.04, (len - 19) * 0.01));
 }
 
-const TERR = { f: 1.0, r: 1.06, h: 1.14 };
+const TERR = { f: 1.0, r: 1.06, h: 1.14, y: 0 }; /* y = Bass Strait ferry: no fuel burned */
 
 /* ---------- Waypoint network with stop guides ---------- */
 const NODES = {
@@ -494,6 +497,167 @@ const NODES = {
   wauchope: { n: "Wauchope (Devils Marbles)", k: "rh", f: true, d: 0.4, g: "Stuart Hwy — Alice to Darwin", st: "NT",
     hrs: "~7am–9pm", fac: ["Fuel", "Pub", "Camping"],
     see: "Karlu Karlu / Devils Marbles at sunrise", stay: "Devils Marbles campground; pub sites" },
+
+  /* ---- Sydney → Brisbane coast (NSW) ---- */
+  newcastle: { n: "Newcastle", k: "city", f: true, d: 0, g: "Sydney → Brisbane coast", st: "NSW",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "All services"],
+    see: "Merewether Ocean Baths; Nobbys Lighthouse walk", stay: "Stockton Beach Holiday Park" },
+  portmacquarie: { n: "Port Macquarie", k: "town", f: true, d: 0.02, g: "Sydney → Brisbane coast", st: "NSW",
+    hrs: "~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
+    see: "Koala Hospital; Town Beach breakwall art", stay: "NRMA Port Macquarie" },
+  coffsharbour: { n: "Coffs Harbour", k: "city", f: true, d: 0.02, g: "Sydney → Brisbane coast", st: "NSW",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "The Big Banana; jetty & marina at sunset", stay: "Park Beach Holiday Park" },
+  grafton: { n: "Grafton", k: "town", f: true, d: 0.03, g: "Sydney → Brisbane coast", st: "NSW",
+    hrs: "~6am–9pm", fac: ["Fuel", "Supermarket", "Food"],
+    see: "Jacaranda avenues (Oct–Nov); Clarence riverbanks", stay: "Big River holiday parks on the Clarence" },
+  ballina: { n: "Ballina", k: "town", f: true, d: 0.02, g: "Sydney → Brisbane coast", st: "NSW",
+    hrs: "~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
+    see: "The Big Prawn; Byron Bay day trip", stay: "Ballina Lakeside Holiday Park" },
+
+  /* ---- South East Queensland ---- */
+  goldcoast: { n: "Gold Coast", k: "city", f: true, d: 0, g: "South East Queensland", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "All services"],
+    see: "Surfers skyline; Springbrook hinterland day trip", stay: "Broadwater Tourist Park" },
+  brisbane: { n: "Brisbane", k: "city", f: true, d: 0, g: "South East Queensland", st: "QLD",
+    hrs: "24 hr fuel citywide", fac: ["24 hr fuel", "Supermarkets", "All services"],
+    see: "South Bank lagoon; Lone Pine koalas", stay: "Brisbane Holiday Village, Eight Mile Plains" },
+  sunshinecoast: { n: "Sunshine Coast", k: "city", f: true, d: 0, g: "South East Queensland", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "All services"],
+    see: "Maroochy beaches; Eumundi Markets (Wed & Sat)", stay: "Cotton Tree Holiday Park" },
+  gympie: { n: "Gympie", k: "town", f: true, d: 0.02, g: "South East Queensland", st: "QLD",
+    hrs: "~5am–10pm", fac: ["Fuel", "Supermarket", "Food"],
+    see: "Gold-rush history; Mary Valley Rattler steam train", stay: "Gympie Caravan Park" },
+
+  /* ---- Queensland coast (Bruce Hwy) ---- */
+  maryborough: { n: "Maryborough", k: "town", f: true, d: 0.02, g: "Queensland coast (Bruce Hwy)", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarket", "Dump point"],
+    see: "Mary Poppins trail; Hervey Bay whales 30 min away", stay: "Huntsville Caravan Park" },
+  bundaberg: { n: "Bundaberg", k: "town", f: true, d: 0.02, g: "Queensland coast (Bruce Hwy)", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Bundaberg Rum Distillery; Mon Repos turtles (Nov–Mar)", stay: "Bargara Beach Caravan Park" },
+  gladstone: { n: "Gladstone", k: "town", f: true, d: 0.03, g: "Queensland coast (Bruce Hwy)", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarket", "Food"],
+    see: "Harbour lookout; gateway to Agnes Water & 1770", stay: "Barney Point & Tannum Sands parks" },
+  rockhampton: { n: "Rockhampton", k: "city", f: true, d: 0.03, g: "Queensland coast (Bruce Hwy)", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Beef capital; Capricorn Caves; free zoo in the gardens", stay: "Riverside Tourist Park" },
+  mackay: { n: "Mackay", k: "town", f: true, d: 0.03, g: "Queensland coast (Bruce Hwy)", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Bluewater Lagoon; Eungella platypus day trip", stay: "BIG4 Mackay Marine" },
+  proserpine: { n: "Proserpine (Airlie)", k: "town", f: true, d: 0.04, g: "Queensland coast (Bruce Hwy)", st: "QLD",
+    hrs: "~5am–10pm", fac: ["Fuel", "Supermarket", "Food"],
+    see: "Airlie Beach & the Whitsundays 25 min away", stay: "BIG4 Adventure Whitsunday, Airlie" },
+  bowen: { n: "Bowen", k: "town", f: true, d: 0.04, g: "Queensland coast (Bruce Hwy)", st: "QLD",
+    hrs: "~6am–9pm", fac: ["Fuel", "Supermarket", "Food"],
+    see: "The Big Mango; Horseshoe Bay", stay: "Queens Beach Tourist Village" },
+  townsville: { n: "Townsville", k: "city", f: true, d: 0.03, g: "Queensland coast (Bruce Hwy)", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "All services"],
+    see: "The Strand; Magnetic Island ferry", stay: "BIG4 Rowes Bay" },
+  cardwell: { n: "Cardwell", k: "town", f: true, d: 0.06, g: "Queensland coast (Bruce Hwy)", st: "QLD",
+    hrs: "~6am–8pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "Hinchinbrook Island lookout; famous highway pie shop", stay: "Cardwell Beachcomber" },
+  innisfail: { n: "Innisfail", k: "town", f: true, d: 0.04, g: "Queensland coast (Bruce Hwy)", st: "QLD",
+    hrs: "~5am–9pm", fac: ["Fuel", "Supermarket", "Food"],
+    see: "Art-deco main street; Paronella Park 20 min", stay: "Flying Fish Point Tourist Park" },
+  cairns: { n: "Cairns", k: "city", f: true, d: 0.03, g: "Queensland coast (Bruce Hwy)", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "All services"],
+    see: "Reef trips; Esplanade Lagoon; Kuranda scenic rail", stay: "Cairns Coconut Holiday Resort" },
+
+  /* ---- Barkly & Flinders Hwys — closing the Big Lap ---- */
+  barklyhs: { n: "Barkly Homestead", k: "rh", f: true, d: 0.45, g: "Barkly Hwy — NT", st: "NT",
+    hrs: "Roadhouse ~6am–10pm", fac: ["Fuel", "Meals", "Van sites"],
+    see: "The only stop on the Barkly — sunsets forever", stay: "Barkly Homestead van park" },
+  camooweal: { n: "Camooweal", k: "town", f: true, d: 0.3, g: "Outback Queensland", st: "QLD",
+    hrs: "~6am–9pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "Drovers Camp museum; Georgina River camps", stay: "Post Office Hotel van sites" },
+  mtisa: { n: "Mount Isa", k: "city", f: true, d: 0.1, g: "Outback Queensland", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Hard Times Mine tour; City Lookout at dusk", stay: "Sunset Top Tourist Park" },
+  cloncurry: { n: "Cloncurry", k: "town", f: true, d: 0.15, g: "Outback Queensland", st: "QLD",
+    hrs: "~5am–10pm", fac: ["Fuel", "Supermarket", "Food"],
+    see: "Birthplace of the Flying Doctor — John Flynn Place", stay: "Discovery Parks Cloncurry" },
+  juliacreek: { n: "Julia Creek", k: "town", f: true, d: 0.2, g: "Outback Queensland", st: "QLD",
+    hrs: "~6am–8pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "Artesian bathhouse under outback stars", stay: "Julia Creek Caravan Park (artesian baths)" },
+  richmondq: { n: "Richmond (QLD)", k: "town", f: true, d: 0.2, g: "Outback Queensland", st: "QLD",
+    hrs: "~6am–8pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "Kronosaurus Korner — marine fossil country", stay: "Lakeview Caravan Park" },
+  hughenden: { n: "Hughenden", k: "town", f: true, d: 0.18, g: "Outback Queensland", st: "QLD",
+    hrs: "~6am–8pm", fac: ["Fuel", "Supermarket", "Toilets"],
+    see: "Dinosaur country; Porcupine Gorge 60 km north", stay: "Allen Terry Caravan Park" },
+  charterstowers: { n: "Charters Towers", k: "town", f: true, d: 0.1, g: "Outback Queensland", st: "QLD",
+    hrs: "~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
+    see: "Gold-rush streetscapes; Towers Hill lookout", stay: "BIG4 Aussie Outback Oasis" },
+
+  /* ---- Canberra & the ACT ---- */
+  canberra: { n: "Canberra", k: "city", f: true, d: 0, g: "Canberra & the ACT", st: "ACT",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "All services"],
+    see: "Parliament House; War Memorial; lake loop", stay: "Exhibition Park (EPIC) powered sites" },
+
+  /* ---- Geelong & the ferry ---- */
+  geelong: { n: "Geelong", k: "city", f: true, d: 0, g: "Geelong & Bass Strait ferry", st: "VIC",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "All services"],
+    see: "Waterfront bollards; Spirit of Tasmania terminal (Corio Quay); Great Ocean Road gateway",
+    stay: "Discovery Parks Geelong" },
+
+  /* ---- Tasmania — north & west ---- */
+  devonport: { n: "Devonport", k: "town", f: true, d: 0.06, g: "Tasmania — north & west", st: "TAS",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Spirit of Tasmania berth; Mersey Bluff lighthouse", stay: "Mersey Bluff Caravan Park" },
+  burnie: { n: "Burnie", k: "town", f: true, d: 0.06, g: "Tasmania — north & west", st: "TAS",
+    hrs: "~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
+    see: "Little penguins at dusk; Makers' Workshop", stay: "Burnie Holiday Caravan Park, Cooee" },
+  stanley: { n: "Stanley", k: "town", f: true, d: 0.12, g: "Tasmania — north & west", st: "TAS",
+    hrs: "~7am–7pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "The Nut chairlift; heritage village streets", stay: "Stanley Cabin & Tourist Park" },
+  sheffield: { n: "Sheffield", k: "town", f: true, d: 0.1, g: "Tasmania — north & west", st: "TAS",
+    hrs: "~7am–7pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "Town of Murals; Cradle Mountain gateway (60 km)", stay: "Sheffield Caravan Park (showground)" },
+  launceston: { n: "Launceston", k: "city", f: true, d: 0.05, g: "Tasmania — north & west", st: "TAS",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "All services"],
+    see: "Cataract Gorge chairlift; Tamar Valley wineries", stay: "BIG4 Launceston" },
+  rosebery: { n: "Rosebery", k: "town", f: true, d: 0.15, g: "Tasmania — north & west", st: "TAS",
+    hrs: "~7am–7pm", fac: ["Fuel", "Groceries", "Toilets"],
+    see: "Montezuma Falls walk — Tasmania's tallest", stay: "Rosebery Cabin & Tourist Park" },
+  queenstown: { n: "Queenstown", k: "town", f: true, d: 0.15, g: "Tasmania — north & west", st: "TAS",
+    hrs: "~7am–8pm", fac: ["Fuel", "Supermarket", "Food"],
+    see: "Bare copper hills; West Coast Wilderness Railway", stay: "Queenstown Cabin & Tourist Park" },
+  strahan: { n: "Strahan", k: "town", f: true, d: 0.18, g: "Tasmania — north & west", st: "TAS",
+    hrs: "~7am–7pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "Gordon River cruise; Hogarth Falls walk", stay: "Strahan Beach Tourist Park" },
+  derwentbridge: { n: "Derwent Bridge", k: "rh", f: true, d: 0.25, g: "Tasmania — north & west", st: "TAS",
+    hrs: "~8am–6pm", fac: ["Fuel", "Meals", "Toilets"],
+    see: "Lake St Clair; The Wall in the Wilderness", stay: "Lake St Clair Lodge campground" },
+
+  /* ---- Tasmania — south & east ---- */
+  oatlands: { n: "Oatlands", k: "town", f: true, d: 0.1, g: "Tasmania — south & east", st: "TAS",
+    hrs: "~7am–7pm", fac: ["Fuel", "Bakery", "Toilets"],
+    see: "Callington Mill; Georgian sandstone streetscape", stay: "Lakeside RV area, Lake Dulverton" },
+  sthelens: { n: "St Helens", k: "town", f: true, d: 0.12, g: "Tasmania — south & east", st: "TAS",
+    hrs: "~6am–8pm", fac: ["Fuel", "Supermarket", "Dump point"],
+    see: "Bay of Fires just north — orange-lichen beaches", stay: "BIG4 St Helens" },
+  bicheno: { n: "Bicheno", k: "town", f: true, d: 0.14, g: "Tasmania — south & east", st: "TAS",
+    hrs: "~7am–7pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "Blowhole; penguin tours; Freycinet & Wineglass Bay 30 min", stay: "Bicheno East Coast Holiday Park" },
+  swansea: { n: "Swansea", k: "town", f: true, d: 0.12, g: "Tasmania — south & east", st: "TAS",
+    hrs: "~7am–7pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "Great Oyster Bay views across to the Hazards", stay: "Swansea Holiday Park" },
+  triabunna: { n: "Triabunna", k: "town", f: true, d: 0.1, g: "Tasmania — south & east", st: "TAS",
+    hrs: "~7am–7pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "Maria Island ferry — take the pushbikes", stay: "Triabunna Cabin & Caravan Park" },
+  sorell: { n: "Sorell", k: "town", f: true, d: 0.06, g: "Tasmania — south & east", st: "TAS",
+    hrs: "~5am–10pm", fac: ["Fuel", "Supermarkets", "Bakery"],
+    see: "Junction town — roadside fruit stalls in season", stay: "Barilla Holiday Park nearby" },
+  portarthur: { n: "Port Arthur", k: "town", f: false, d: 0.15, g: "Tasmania — south & east", st: "TAS",
+    hrs: "No fuel — fill at Sorell", fac: ["Historic site", "Cafe", "Toilets"],
+    see: "Port Arthur Historic Site — allow half a day; Remarkable Cave", stay: "NRMA Port Arthur Holiday Park" },
+  hobart: { n: "Hobart", k: "city", f: true, d: 0.05, g: "Tasmania — south & east", st: "TAS",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "All services"],
+    see: "MONA; Salamanca Market (Sat); kunanyi / Mt Wellington summit", stay: "Barilla Holiday Park, Cambridge" },
+  hamiltontas: { n: "Hamilton (TAS)", k: "town", f: true, d: 0.12, g: "Tasmania — south & east", st: "TAS",
+    hrs: "~8am–6pm", fac: ["Fuel", "Pub", "Toilets"],
+    see: "Georgian village on the Clyde", stay: "Riverside camping reserve" },
 };
 
 const EDGES = [
@@ -527,6 +691,26 @@ const EDGES = [
   ["adelaide","burra",156,"r"], ["burra","peterborough",76,"r"], ["peterborough","yunta",78,"f"],
   ["yunta","brokenhill",200,"f"], ["brokenhill","wentworth",265,"f"], ["wentworth","mildura",32,"f"],
   ["adelaide","victorharbor",82,"h"],
+  ["sydney","newcastle",160,"f"], ["newcastle","portmacquarie",236,"f"],
+  ["portmacquarie","coffsharbour",154,"f"], ["coffsharbour","grafton",83,"r"],
+  ["grafton","ballina",128,"f"], ["ballina","goldcoast",108,"f"], ["goldcoast","brisbane",79,"f"],
+  ["brisbane","sunshinecoast",104,"f"], ["sunshinecoast","gympie",77,"r"], ["gympie","maryborough",92,"r"],
+  ["maryborough","bundaberg",112,"r"], ["bundaberg","gladstone",174,"r"], ["gladstone","rockhampton",107,"f"],
+  ["rockhampton","mackay",334,"f"], ["mackay","proserpine",124,"f"], ["proserpine","bowen",63,"f"],
+  ["bowen","townsville",197,"f"], ["townsville","cardwell",164,"f"], ["cardwell","innisfail",79,"r"],
+  ["innisfail","cairns",88,"r"],
+  ["tennant","barklyhs",186,"f"], ["barklyhs","camooweal",262,"f"], ["camooweal","mtisa",188,"f"],
+  ["mtisa","cloncurry",118,"f"], ["cloncurry","juliacreek",137,"f"], ["juliacreek","richmondq",144,"f"],
+  ["richmondq","hughenden",113,"f"], ["hughenden","charterstowers",243,"f"], ["charterstowers","townsville",134,"f"],
+  ["yass","canberra",60,"r"], ["goulburn","canberra",92,"r"],
+  ["melbourne","geelong",75,"f"], ["geelong","devonport",431,"y"],
+  ["devonport","burnie",49,"f"], ["burnie","stanley",80,"r"], ["devonport","sheffield",30,"r"],
+  ["sheffield","launceston",78,"r"], ["devonport","launceston",99,"f"],
+  ["launceston","sthelens",163,"h"], ["sthelens","bicheno",76,"r"], ["bicheno","swansea",46,"r"],
+  ["swansea","triabunna",52,"r"], ["triabunna","sorell",58,"r"], ["sorell","hobart",26,"f"],
+  ["sorell","portarthur",74,"r"], ["launceston","oatlands",132,"f"], ["oatlands","hobart",84,"f"],
+  ["hobart","hamiltontas",73,"r"], ["hamiltontas","derwentbridge",100,"h"], ["derwentbridge","queenstown",86,"h"],
+  ["queenstown","strahan",40,"h"], ["queenstown","rosebery",53,"h"], ["rosebery","burnie",105,"h"],
 ];
 
 const ADJ = {};
@@ -564,11 +748,15 @@ const PRESETS = [
   { name: "Across the Nullarbor", stops: ["adelaide", "perth"] },
   { name: "Adelaide → Darwin",    stops: ["adelaide", "darwin"] },
   { name: "Adelaide → Broken Hill", stops: ["adelaide", "brokenhill"] },
+  { name: "Brisbane → Cairns",     stops: ["brisbane", "cairns"] },
+  { name: "Melbourne → Hobart",    stops: ["melbourne", "hobart"] },
+  { name: "The Big Lap",           stops: ["adelaide", "darwin", "cairns", "brisbane", "sydney", "melbourne", "adelaide"] },
 ];
 
 const STATE_GROUPS = [
   ["SA", "South Australia"], ["NT", "Northern Territory"], ["WA", "Western Australia"],
-  ["VIC", "Victoria"], ["NSW", "New South Wales"],
+  ["VIC", "Victoria"], ["NSW", "New South Wales"], ["ACT", "Canberra & the ACT"],
+  ["QLD", "Queensland"], ["TAS", "Tasmania"],
 ];
 
 const fmt = (n, d = 0) =>
@@ -606,6 +794,22 @@ const COORDS = {
   albury:[-36.08,146.92], holbrook:[-35.72,147.31], burra:[-33.68,138.93],
   peterborough:[-32.97,138.84], yunta:[-32.58,139.55], brokenhill:[-31.96,141.47],
   wentworth:[-34.11,141.92], victorharbor:[-35.55,138.62], wauchope:[-20.64,134.22],
+  newcastle:[-32.93,151.78], portmacquarie:[-31.43,152.91], coffsharbour:[-30.3,153.11],
+  grafton:[-29.69,152.93], ballina:[-28.87,153.56], goldcoast:[-28.0,153.43],
+  brisbane:[-27.47,153.03], sunshinecoast:[-26.65,153.09], gympie:[-26.19,152.67],
+  maryborough:[-25.54,152.7], bundaberg:[-24.87,152.35], gladstone:[-23.84,151.26],
+  rockhampton:[-23.38,150.51], mackay:[-21.14,149.19], proserpine:[-20.4,148.58],
+  bowen:[-20.01,148.25], townsville:[-19.26,146.82], cardwell:[-18.27,146.03],
+  innisfail:[-17.52,146.03], cairns:[-16.92,145.77], barklyhs:[-19.71,135.82],
+  camooweal:[-19.92,138.12], mtisa:[-20.73,139.49], cloncurry:[-20.71,140.51],
+  juliacreek:[-20.66,141.75], richmondq:[-20.73,143.14], hughenden:[-20.85,144.2],
+  charterstowers:[-20.08,146.26], canberra:[-35.28,149.13], geelong:[-38.15,144.36],
+  devonport:[-41.18,146.35], burnie:[-41.05,145.91], stanley:[-40.76,145.3],
+  sheffield:[-41.38,146.33], launceston:[-41.44,147.14], rosebery:[-41.78,145.54],
+  queenstown:[-42.08,145.55], strahan:[-42.15,145.33], derwentbridge:[-42.13,146.24],
+  oatlands:[-42.3,147.37], sthelens:[-41.32,148.24], bicheno:[-41.87,148.3],
+  swansea:[-42.12,148.07], triabunna:[-42.51,147.91], sorell:[-42.79,147.56],
+  portarthur:[-43.15,147.85], hobart:[-42.88,147.33], hamiltontas:[-42.55,146.84],
 };
 
 /* WMO weather codes → label + emoji */
@@ -620,6 +824,287 @@ function wxInfo(code) {
   if (code >= 95) return { t: "Storms", e: "⛈️" };
   return { t: "Mixed", e: "🌡️" };
 }
+
+/* ============ Route map (Leaflet + OpenStreetMap) ============ */
+
+const LEAFLET_CSS = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+const LEAFLET_JS = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+
+let leafletPromise = null;
+function loadLeaflet() {
+  if (typeof window === "undefined" || typeof document === "undefined")
+    return Promise.reject(new Error("no browser"));
+  if (window.L) return Promise.resolve(window.L);
+  if (leafletPromise) return leafletPromise;
+  leafletPromise = new Promise((resolve, reject) => {
+    const fail = (e) => { leafletPromise = null; reject(e || new Error("map blocked")); };
+    const timer = setTimeout(() => fail(new Error("map timed out")), 8000);
+    const css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = LEAFLET_CSS;
+    document.head.appendChild(css);
+    const js = document.createElement("script");
+    js.src = LEAFLET_JS;
+    js.async = true;
+    js.onload = () => { clearTimeout(timer); window.L ? resolve(window.L) : fail(); };
+    js.onerror = () => { clearTimeout(timer); fail(); };
+    document.head.appendChild(js);
+  });
+  return leafletPromise;
+}
+
+/* Flat projection of every stop for the offline sketch */
+const SK_W = 640, SK_H = 470, SK_PAD = 28;
+const SKETCH_PTS = (() => {
+  const ids = Object.keys(COORDS);
+  let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+  ids.forEach((id) => {
+    const [la, ln] = COORDS[id];
+    if (la < minLat) minLat = la;
+    if (la > maxLat) maxLat = la;
+    if (ln < minLng) minLng = ln;
+    if (ln > maxLng) maxLng = ln;
+  });
+  const sx = (SK_W - SK_PAD * 2) / (maxLng - minLng);
+  const sy = (SK_H - SK_PAD * 2) / (maxLat - minLat);
+  const pts = {};
+  ids.forEach((id) => {
+    const [la, ln] = COORDS[id];
+    pts[id] = [SK_PAD + (ln - minLng) * sx, SK_PAD + (maxLat - la) * sy];
+  });
+  return pts;
+})();
+
+function RouteSketch({ route, waypoints, fills }) {
+  const onRoute = new Set(route.stops);
+  const pts = SKETCH_PTS;
+  const runs = [];
+  if (route.segs.length > 0) {
+    let cur = [route.stops[0]];
+    route.segs.forEach((s, i) => {
+      const nxt = route.stops[i + 1];
+      if (s.t === "y") {
+        if (cur.length > 1) runs.push({ ids: cur, ferry: false });
+        runs.push({ ids: [route.stops[i], nxt], ferry: true });
+        cur = [nxt];
+      } else cur.push(nxt);
+    });
+    if (cur.length > 1) runs.push({ ids: cur, ferry: false });
+  }
+  const ptStr = (ids) => ids.map((id) => pts[id][0].toFixed(1) + "," + pts[id][1].toFixed(1)).join(" ");
+  return (
+    <svg viewBox={"0 0 " + SK_W + " " + SK_H} role="img"
+         aria-label="Sketch of the JourneyPro road network with your route highlighted"
+         style={{ width: "100%", height: "auto", display: "block", background: "var(--paper)",
+                  border: "1.5px solid var(--line)", borderRadius: 12 }}>
+      {EDGES.map(([a, b], i) => (
+        <line key={i} x1={pts[a][0]} y1={pts[a][1]} x2={pts[b][0]} y2={pts[b][1]}
+              stroke="#CFCEC2" strokeWidth={1.5} strokeDasharray="4 4" strokeLinecap="round" />
+      ))}
+      {runs.map((r, i) => r.ferry ? (
+        <polyline key={"run" + i} points={ptStr(r.ids)} fill="none" stroke="var(--sign)"
+                  strokeWidth={2.5} strokeDasharray="6 7" strokeLinejoin="round" strokeLinecap="round" />
+      ) : (
+        <g key={"run" + i}>
+          <polyline points={ptStr(r.ids)} fill="none" stroke="#FFFFFF" strokeWidth={6.5}
+                    strokeLinejoin="round" strokeLinecap="round" />
+          <polyline points={ptStr(r.ids)} fill="none" stroke="var(--sign)" strokeWidth={3.5}
+                    strokeLinejoin="round" strokeLinecap="round" />
+        </g>
+      ))}
+      {Object.keys(SKETCH_PTS).map((id) => {
+        const [x, y] = pts[id];
+        if (waypoints.includes(id)) {
+          return (
+            <rect key={id} x={x - 5.5} y={y - 5.5} width={11} height={11} fill="var(--amber)"
+                  stroke="var(--ink)" strokeWidth={2} transform={"rotate(45 " + x + " " + y + ")"} />
+          );
+        }
+        if (fills[id]) {
+          return <circle key={id} cx={x} cy={y} r={4.5} fill="var(--amber)" stroke="var(--ink)" strokeWidth={1.5} />;
+        }
+        if (onRoute.has(id)) {
+          return <circle key={id} cx={x} cy={y} r={3.5} fill="var(--sign)" stroke="#FFFFFF" strokeWidth={1.5} />;
+        }
+        return <circle key={id} cx={x} cy={y} r={2} fill="#C4C3B6" />;
+      })}
+    </svg>
+  );
+}
+
+function RouteMap({ route, waypoints, fills, dayAt, stays }) {
+  const boxRef = useRef(null);
+  const mapRef = useRef(null);
+  const overlayRef = useRef(null);
+  const [mapState, setMapState] = useState("loading"); /* loading | live | sketch */
+
+  useEffect(() => {
+    let dead = false;
+    loadLeaflet()
+      .then((L) => {
+        if (dead || !boxRef.current || mapRef.current) return;
+        const m = L.map(boxRef.current, { zoomControl: true, scrollWheelZoom: false });
+        if (m.attributionControl) m.attributionControl.setPrefix(false);
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 17,
+          className: "jp-tiles",
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
+        }).addTo(m);
+        m.on("click", () => m.scrollWheelZoom.enable());
+        overlayRef.current = L.layerGroup().addTo(m);
+        mapRef.current = m;
+        setMapState("live");
+      })
+      .catch(() => { if (!dead) setMapState("sketch"); });
+    return () => {
+      dead = true;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        overlayRef.current = null;
+      }
+    };
+  }, []);
+
+  const fitTrip = () => {
+    const L = typeof window !== "undefined" ? window.L : null;
+    const m = mapRef.current;
+    if (!L || !m) return;
+    m.invalidateSize();
+    const ids = route.stops.length > 1 ? route.stops : Object.keys(COORDS);
+    m.fitBounds(L.latLngBounds(ids.map((id) => COORDS[id])), { padding: [30, 30] });
+  };
+
+  useEffect(() => {
+    const L = typeof window !== "undefined" ? window.L : null;
+    const m = mapRef.current;
+    const ov = overlayRef.current;
+    if (mapState !== "live" || !L || !m || !ov) return;
+    ov.clearLayers();
+
+    const onRoute = new Set(route.stops);
+
+    /* The whole JourneyPro network, faint */
+    EDGES.forEach(([a, b]) => {
+      L.polyline([COORDS[a], COORDS[b]], {
+        color: "#9AA097", weight: 1.6, opacity: 0.5, dashArray: "3 5", interactive: false,
+      }).addTo(ov);
+    });
+
+    /* The active route: white-cased green on roads, dashed green across Bass Strait */
+    if (route.segs.length > 0) {
+      const runs = [];
+      let cur = [route.stops[0]];
+      route.segs.forEach((s, i) => {
+        const nxt = route.stops[i + 1];
+        if (s.t === "y") {
+          if (cur.length > 1) runs.push({ ids: cur, ferry: false });
+          runs.push({ ids: [route.stops[i], nxt], ferry: true });
+          cur = [nxt];
+        } else cur.push(nxt);
+      });
+      if (cur.length > 1) runs.push({ ids: cur, ferry: false });
+      runs.forEach((r) => {
+        const path = r.ids.map((id) => COORDS[id]);
+        if (r.ferry) {
+          L.polyline(path, { color: "#00674F", weight: 3, opacity: 0.9, dashArray: "7 9", interactive: false }).addTo(ov);
+        } else {
+          L.polyline(path, { color: "#FFFFFF", weight: 8, opacity: 0.9, lineJoin: "round", interactive: false }).addTo(ov);
+          L.polyline(path, { color: "#00674F", weight: 4, opacity: 1, lineJoin: "round", interactive: false }).addTo(ov);
+        }
+      });
+    }
+
+    const dayOf = {};
+    route.stops.forEach((id, i) => { if (dayOf[id] === undefined) dayOf[id] = dayAt[i]; });
+
+    Object.keys(COORDS).forEach((id) => {
+      const node = NODES[id];
+      if (!node) return;
+      const anchor = waypoints.includes(id);
+      const on = onRoute.has(id);
+      let marker;
+      if (anchor) {
+        const num = waypoints.indexOf(id) + 1;
+        marker = L.marker(COORDS[id], {
+          icon: L.divIcon({
+            className: "",
+            html: '<span class="jp-mapdiamond"><i>' + num + "</i></span>",
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+          }),
+          keyboard: false,
+        });
+      } else if (on && fills[id]) {
+        marker = L.circleMarker(COORDS[id], { radius: 6.5, color: "#21262A", weight: 2, fillColor: "#F5B301", fillOpacity: 1 });
+      } else if (on) {
+        marker = L.circleMarker(COORDS[id], { radius: 5, color: "#FFFFFF", weight: 2, fillColor: "#00674F", fillOpacity: 1 });
+      } else {
+        marker = L.circleMarker(COORDS[id], { radius: 3.5, color: "#8E948B", weight: 1, fillColor: "#C4C3B6", fillOpacity: 0.9 });
+      }
+
+      const bits = [];
+      if (on && dayOf[id] !== undefined) bits.push('<span class="jp-popchip">Day ' + dayOf[id] + "</span>");
+      if (fills[id]) bits.push('<span class="jp-popchip jp-popfill">⛽ Fill ~' + Math.round(fills[id].litres) + " L</span>");
+      const layN = Math.max(0, Number(stays[id]) || 0);
+      if (on && layN > 0) bits.push('<span class="jp-popchip">🌙 ' + layN + (layN === 1 ? " night" : " nights") + "</span>");
+      if (!node.f) bits.push('<span class="jp-popchip jp-popred">No fuel</span>');
+
+      marker.bindPopup(
+        '<div class="jp-pop"><p class="jp-popname">' + node.n + " <span>· " + node.st + "</span></p>" +
+        (bits.length ? '<p class="jp-poprow">' + bits.join(" ") + "</p>" : "") +
+        '<p class="jp-popkind">' + (node.k === "rh" ? "Roadhouse" : node.k === "city" ? "City" : "Town") + " · " + node.g + "</p></div>",
+        { closeButton: false, offset: [0, -4] }
+      );
+      marker.addTo(ov);
+    });
+
+    fitTrip();
+  }, [mapState, route, waypoints, fills, dayAt, stays]);
+
+  return (
+    <div className="jp-card p-5">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <span className="jp-eyebrow inline-flex items-center gap-2">
+          <MapIcon size={16} style={{ color: "var(--sign)" }} aria-hidden /> Route map
+        </span>
+        {mapState === "live" && (
+          <button type="button" className="jp-preset" onClick={fitTrip}>Recenter</button>
+        )}
+      </div>
+
+      {mapState === "sketch" ? (
+        <>
+          <RouteSketch route={route} waypoints={waypoints} fills={fills} />
+          <p className="jp-note mt-2">
+            Network sketch — the full interactive map (real roads, towns and zoom) loads on the
+            live website with an internet connection.
+          </p>
+        </>
+      ) : (
+        <div className="jp-mapwrap">
+          <div ref={boxRef} className="jp-map" aria-label="Interactive route map" />
+          {mapState === "loading" && (
+            <div className="jp-maploading">
+              <Loader2 size={18} className="animate-spin" aria-hidden /> Loading map…
+            </div>
+          )}
+        </div>
+      )}
+
+      {route.stops.length > 1 ? (
+        <p className="jp-note mt-2">
+          <span className="jp-key jp-key-d" aria-hidden /> destinations · <span className="jp-key jp-key-r" aria-hidden /> route
+          stops · <span className="jp-key jp-key-f" aria-hidden /> fill-ups
+          {mapState === "live" ? " — tap any pin for details" : ""}
+        </p>
+      ) : (
+        <p className="jp-note mt-2">Add destinations and your route draws itself across the network.</p>
+      )}
+    </div>
+  );
+}
+
 
 export default function JourneyPro() {
   const [makeIdx, setMakeIdx] = useState(1);
@@ -893,9 +1378,13 @@ export default function JourneyPro() {
         }
       }
       if (i < segs.length) {
-        const L = segL(segs[i], load.factor);
-        litres += L; soloLitres += segL(segs[i], 1); km += segs[i].km;
-        tank = Math.max(0, tank - L);
+        if (segs[i].t === "y") {
+          extraDays += 1; /* overnight ferry crossing — no fuel, no road km */
+        } else {
+          const L = segL(segs[i], load.factor);
+          litres += L; soloLitres += segL(segs[i], 1); km += segs[i].km;
+          tank = Math.max(0, tank - L);
+        }
       }
     }
 
@@ -1027,6 +1516,40 @@ export default function JourneyPro() {
           border-radius: 6px; padding: 0.05rem 0.4rem; font-size: 0.68rem; font-weight: 600;
           letter-spacing: 0.06em; text-transform: uppercase; }
         .jp-range { width: 100%; accent-color: var(--sign); }
+        .jp-mapwrap { position: relative; }
+        .jp-map { height: 340px; border-radius: 12px; border: 1.5px solid var(--line);
+          background: #E9E8DF; overflow: hidden; z-index: 0; }
+        @media (min-width: 880px) { .jp-map { height: 400px; } }
+        .jp-tiles { filter: saturate(0.72) contrast(0.96) brightness(1.03) sepia(0.14); }
+        .jp-maploading { position: absolute; inset: 0; display: flex; align-items: center;
+          justify-content: center; gap: 0.5rem; color: var(--muted); font-size: 0.85rem;
+          pointer-events: none; }
+        .jp-mapdiamond { display: block; width: 17px; height: 17px; background: var(--amber);
+          border: 2.5px solid var(--ink); transform: rotate(45deg); margin: 3px;
+          box-shadow: 0 2px 6px rgba(33,38,42,0.4); }
+        .jp-mapdiamond i { display: flex; width: 100%; height: 100%; align-items: center;
+          justify-content: center; transform: rotate(-45deg); font-style: normal;
+          font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600;
+          color: var(--ink); }
+        .jp-pop { font-family: 'Archivo', system-ui, sans-serif; color: var(--ink); min-width: 150px; }
+        .jp-popname { font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+          font-size: 1.05rem; margin: 0; }
+        .jp-popname span { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
+        .jp-poprow { margin: 0.3rem 0 0; display: flex; flex-wrap: wrap; gap: 0.3rem; }
+        .jp-popchip { display: inline-block; border: 1px solid var(--line); border-radius: 6px;
+          padding: 0.05rem 0.4rem; font-size: 0.72rem; font-weight: 600; background: var(--paper); }
+        .jp-popfill { background: var(--amber); border-color: var(--ink); }
+        .jp-popred { color: var(--red); border-color: var(--red); }
+        .jp-popkind { margin: 0.35rem 0 0; font-size: 0.72rem; color: var(--muted);
+          text-transform: uppercase; letter-spacing: 0.06em;
+          font-family: 'Barlow Condensed', sans-serif; font-weight: 600; }
+        .leaflet-popup-content-wrapper { border-radius: 12px; border: 1.5px solid var(--line);
+          box-shadow: 0 10px 24px -12px rgba(33,38,42,0.35); }
+        .leaflet-popup-content { margin: 10px 12px; }
+        .jp-key { display: inline-block; width: 9px; height: 9px; vertical-align: -1px; }
+        .jp-key-d { background: var(--amber); border: 1.5px solid var(--ink); transform: rotate(45deg); }
+        .jp-key-r { background: var(--sign); border-radius: 999px; border: 1.5px solid #fff; }
+        .jp-key-f { background: var(--amber); border-radius: 999px; border: 1.5px solid var(--ink); }
       `}</style>
 
       <header className="max-w-6xl mx-auto px-4 pt-8 pb-2">
@@ -1044,7 +1567,7 @@ export default function JourneyPro() {
           </div>
           <span className="jp-display text-sm font-semibold tracking-widest uppercase px-3 py-1 rounded-md"
                 style={{ background: "var(--amber)", color: "var(--ink)" }}>
-            Prototype v0.8
+            Prototype v0.10
           </span>
         </div>
       </header>
@@ -1501,6 +2024,9 @@ export default function JourneyPro() {
             )}
           </div>
 
+          <RouteMap route={route} waypoints={waypoints} fills={plan.fills}
+                    dayAt={plan.dayAt} stays={stays} />
+
           {route.segs.length > 0 && (
             <div className="jp-card p-5">
               <div className="flex items-center justify-between gap-2 mb-2">
@@ -1508,6 +2034,13 @@ export default function JourneyPro() {
                 <span className="jp-chip">~{fmt(plan.avgCons, 1)} L/100km as configured</span>
               </div>
               <p className="jp-note mb-2">Tap any stop for hours, facilities, things to do &amp; places to stay.</p>
+              {route.segs.some((s) => s.t === "y") && (
+                <p className="jp-note mb-2" style={{ color: "var(--sign)", fontWeight: 600 }}>
+                  ⛴️ Includes the Spirit of Tasmania (Geelong ⇄ Devonport). Fares for a car + van
+                  aren&rsquo;t in the totals — budget roughly $400–$1,000+ each way depending on season
+                  and rig length, and book well ahead for summer.
+                </p>
+              )}
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <button type="button" className="jp-preset" onClick={fetchWeather}
                         disabled={wx.status === "loading"}>
@@ -1613,7 +2146,11 @@ export default function JourneyPro() {
                       </p>
                     )}
                     {i < route.segs.length && (
-                      <p className="jp-seg jp-mono">{route.segs[i].km} km</p>
+                      route.segs[i].t === "y" ? (
+                        <p className="jp-seg">⛴️ Spirit of Tasmania — overnight crossing, ~9–11 hr, no fuel burned</p>
+                      ) : (
+                        <p className="jp-seg jp-mono">{route.segs[i].km} km</p>
+                      )
                     )}
                   </div>
                 );
@@ -1640,8 +2177,8 @@ export default function JourneyPro() {
               <Info size={16} className="mt-0.5 flex-none" style={{ color: "var(--muted)" }} aria-hidden />
               <p className="jp-note">
                 Estimates for planning only. Vehicle, van and trailer figures are curated
-                approximations — check your own plates and handbook. Live maps and live fuel prices
-                arrive when we take this to a real website.
+                approximations — check your own plates and handbook. Live fuel prices arrive in a
+                coming update.
               </p>
             </div>
           </div>
@@ -1649,7 +2186,7 @@ export default function JourneyPro() {
           <p className="jp-note flex items-center gap-2 px-1">
             <Fuel size={14} aria-hidden />
             Dataset: 16 vehicle makes, 10 caravan brands, 8 trailer sizes,
-            {" "}{Object.keys(NODES).length} stop guides. Live weather by Open-Meteo. Missing yours? Tell us and it goes in.
+            {" "}{Object.keys(NODES).length} stop guides. Live weather by Open-Meteo · map &copy; OpenStreetMap. Missing yours? Tell us and it goes in.
           </p>
         </section>
       </main>
