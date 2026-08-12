@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { AlertTriangle, Fuel, Caravan, Route, Info, X, Plus, Clock, ChevronDown, ExternalLink, CloudSun, Wind, Loader2, Map as MapIcon } from "lucide-react";
+import { AlertTriangle, Fuel, Caravan, Route, Info, X, Plus, Clock, ChevronDown, ExternalLink, CloudSun, Wind, Loader2, Map as MapIcon, Compass } from "lucide-react";
 
 /* On the real web there's no preview storage API — back the same interface
    with the browser's localStorage so saved trips keep working. */
@@ -24,18 +24,17 @@ if (typeof window !== "undefined" && !window.storage) {
 }
 
 /* ============================================================
-   JourneyPro — Prototype v0.11 (the West + the Outback Way)
-   · 51 new stops: Victoria Hwy & the Kimberley, Broome, the
-     Pilbara coast, Ningaloo (Coral Bay & Exmouth), Carnarvon,
-     Kalbarri, Geraldton, the Goldfields (Kalgoorlie) — the
-     full Darwin → Perth coast
-   · The Outback Way: Great Central Rd + Plenty Hwy as proper
-     UNSEALED legs — extra fuel burn, warnings, permit note,
-     amber-dashed on the map
-   · Matilda Way sealed corridor: Winton → Longreach →
-     Charleville → Roma → Toowoomba → Brisbane, + Emerald link
-   · The Big Lap preset is now the full coastal ring
-   · Plus everything from v0.10
+   JourneyPro — Prototype v0.12 (trip ideas)
+   · Trip ideas card: eight curated classics with a proper
+     pitch each — Big Lap (pick your start capital + direction),
+     Great Ocean Road, the Nullarbor, up the Centre, East Coast,
+     Tassie, the Outback Way, Matilda Country
+   · Weekender planner: pick trip length + departure point and
+     JourneyPro shapes a return trip to fit, lay days included
+   · Great Ocean Road & Limestone Coast join the network:
+     Torquay → Apollo Bay → Port Campbell → Warrnambool →
+     Port Fairy → Portland → Mt Gambier → Robe → the Coorong
+   · Plus everything from v0.11
    Curated prototype dataset — figures are realistic estimates
    ============================================================ */
 
@@ -275,7 +274,7 @@ const NODES = {
   hawker: { n: "Hawker", k: "town", f: true, d: 0.15, g: "Flinders Ranges", st: "SA",
     hrs: "~7am–7pm", fac: ["Fuel", "Food", "Toilets"],
     see: "Jeff Morgan panorama gallery; range lookouts", stay: "Hawker Caravan Park" },
-  wilpena: { n: "Wilpena Pound", k: "town", f: true, d: 0.3, g: "Flinders Ranges", st: "SA",
+  wilpena: { n: "Wilpena Pound", k: "town", f: true, d: 0.3, wk: true, g: "Flinders Ranges", st: "SA",
     hrs: "Resort store ~8am–5pm", fac: ["Fuel", "Store", "Showers"],
     see: "Wilpena Pound walks; scenic flights", stay: "Wilpena Pound Resort & campground" },
   pimba: { n: "Pimba (Spud's)", k: "rh", f: true, d: 0.25, g: "Stuart Hwy — Outback SA", st: "SA",
@@ -302,7 +301,7 @@ const NODES = {
   curtin: { n: "Curtin Springs", k: "rh", f: true, d: 0.5, g: "Red Centre (NT)", st: "NT",
     hrs: "~7am–late", fac: ["Fuel", "Food", "Camping"],
     see: "Mt Conner lookout nearby", stay: "Curtin Springs camping & rooms" },
-  yulara: { n: "Yulara (Uluru)", k: "town", f: true, d: 0.45, g: "Red Centre (NT)", st: "NT",
+  yulara: { n: "Yulara (Uluru)", k: "town", f: true, d: 0.45, wk: true, g: "Red Centre (NT)", st: "NT",
     hrs: "~7am–9pm", fac: ["Fuel", "Supermarket", "Food", "Pool"],
     see: "Uluru & Kata Tjuta — sunrise and sunset viewing", stay: "Ayers Rock Resort, campground to hotels" },
   alicesprings: { n: "Alice Springs", k: "city", f: true, d: 0.15, g: "Red Centre (NT)", st: "NT",
@@ -434,7 +433,7 @@ const NODES = {
   renmark: { n: "Renmark", k: "town", f: true, d: 0.05, g: "Toward Sydney", st: "SA",
     hrs: "Fuel to ~10pm", fac: ["Supermarket", "Food"],
     see: "Paddle steamers; Paringa bridge", stay: "Riverfront caravan parks" },
-  mildura: { n: "Mildura", k: "town", f: true, d: 0.04, g: "Toward Sydney", st: "VIC",
+  mildura: { n: "Mildura", k: "town", f: true, d: 0.04, wk: true, g: "Toward Sydney", st: "VIC",
     hrs: "24 hr fuel", fac: ["Supermarket", "Food", "Mechanics"],
     see: "Murray cruises; wineries", stay: "Many river parks" },
   euston: { n: "Euston", k: "town", f: true, d: 0.1, g: "Toward Sydney", st: "NSW",
@@ -488,13 +487,13 @@ const NODES = {
   yunta: { n: "Yunta", k: "rh", f: true, d: 0.2, g: "Barrier Hwy", st: "SA",
     hrs: "~6am–9pm", fac: ["Fuel", "Food"],
     see: "Gateway to Flinders back tracks", stay: "Roadhouse sites" },
-  brokenhill: { n: "Broken Hill", k: "city", f: true, d: 0.1, g: "Barrier Hwy", st: "NSW",
+  brokenhill: { n: "Broken Hill", k: "city", f: true, d: 0.1, wk: true, g: "Barrier Hwy", st: "NSW",
     hrs: "24 hr fuel", fac: ["All services", "Supermarkets"],
     see: "Line of Lode; Pro Hart gallery; Silverton 25 km", stay: "Broken Hill caravan parks" },
   wentworth: { n: "Wentworth", k: "town", f: true, d: 0.07, g: "Barrier Hwy", st: "NSW",
     hrs: "~6am–9pm", fac: ["Fuel", "Food"],
     see: "Murray–Darling junction", stay: "Willow Bend Caravan Park" },
-  victorharbor: { n: "Victor Harbor", k: "town", f: true, d: 0.03, g: "Fleurieu", st: "SA",
+  victorharbor: { n: "Victor Harbor", k: "town", f: true, d: 0.03, wk: true, g: "Fleurieu", st: "SA",
     hrs: "Fuel to ~10pm", fac: ["Supermarket", "Food"],
     see: "Granite Island tram; whales in season", stay: "Beachfront caravan parks" },
   wauchope: { n: "Wauchope (Devils Marbles)", k: "rh", f: true, d: 0.4, g: "Stuart Hwy — Alice to Darwin", st: "NT",
@@ -536,7 +535,7 @@ const NODES = {
   maryborough: { n: "Maryborough", k: "town", f: true, d: 0.02, g: "Queensland coast (Bruce Hwy)", st: "QLD",
     hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarket", "Dump point"],
     see: "Mary Poppins trail; Hervey Bay whales 30 min away", stay: "Huntsville Caravan Park" },
-  bundaberg: { n: "Bundaberg", k: "town", f: true, d: 0.02, g: "Queensland coast (Bruce Hwy)", st: "QLD",
+  bundaberg: { n: "Bundaberg", k: "town", f: true, d: 0.02, wk: true, g: "Queensland coast (Bruce Hwy)", st: "QLD",
     hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
     see: "Bundaberg Rum Distillery; Mon Repos turtles (Nov–Mar)", stay: "Bargara Beach Caravan Park" },
   gladstone: { n: "Gladstone", k: "town", f: true, d: 0.03, g: "Queensland coast (Bruce Hwy)", st: "QLD",
@@ -548,7 +547,7 @@ const NODES = {
   mackay: { n: "Mackay", k: "town", f: true, d: 0.03, g: "Queensland coast (Bruce Hwy)", st: "QLD",
     hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
     see: "Bluewater Lagoon; Eungella platypus day trip", stay: "BIG4 Mackay Marine" },
-  proserpine: { n: "Proserpine (Airlie)", k: "town", f: true, d: 0.04, g: "Queensland coast (Bruce Hwy)", st: "QLD",
+  proserpine: { n: "Proserpine (Airlie)", k: "town", f: true, d: 0.04, wk: true, g: "Queensland coast (Bruce Hwy)", st: "QLD",
     hrs: "~5am–10pm", fac: ["Fuel", "Supermarket", "Food"],
     see: "Airlie Beach & the Whitsundays 25 min away", stay: "BIG4 Adventure Whitsunday, Airlie" },
   bowen: { n: "Bowen", k: "town", f: true, d: 0.04, g: "Queensland coast (Bruce Hwy)", st: "QLD",
@@ -594,7 +593,7 @@ const NODES = {
     see: "Gold-rush streetscapes; Towers Hill lookout", stay: "BIG4 Aussie Outback Oasis" },
 
   /* ---- Canberra & the ACT ---- */
-  canberra: { n: "Canberra", k: "city", f: true, d: 0, g: "Canberra & the ACT", st: "ACT",
+  canberra: { n: "Canberra", k: "city", f: true, d: 0, wk: true, g: "Canberra & the ACT", st: "ACT",
     hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "All services"],
     see: "Parliament House; War Memorial; lake loop", stay: "Exhibition Park (EPIC) powered sites" },
 
@@ -611,7 +610,7 @@ const NODES = {
   burnie: { n: "Burnie", k: "town", f: true, d: 0.06, g: "Tasmania — north & west", st: "TAS",
     hrs: "~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
     see: "Little penguins at dusk; Makers' Workshop", stay: "Burnie Holiday Caravan Park, Cooee" },
-  stanley: { n: "Stanley", k: "town", f: true, d: 0.12, g: "Tasmania — north & west", st: "TAS",
+  stanley: { n: "Stanley", k: "town", f: true, d: 0.12, wk: true, g: "Tasmania — north & west", st: "TAS",
     hrs: "~7am–7pm", fac: ["Fuel", "Food", "Toilets"],
     see: "The Nut chairlift; heritage village streets", stay: "Stanley Cabin & Tourist Park" },
   sheffield: { n: "Sheffield", k: "town", f: true, d: 0.1, g: "Tasmania — north & west", st: "TAS",
@@ -626,7 +625,7 @@ const NODES = {
   queenstown: { n: "Queenstown", k: "town", f: true, d: 0.15, g: "Tasmania — north & west", st: "TAS",
     hrs: "~7am–8pm", fac: ["Fuel", "Supermarket", "Food"],
     see: "Bare copper hills; West Coast Wilderness Railway", stay: "Queenstown Cabin & Tourist Park" },
-  strahan: { n: "Strahan", k: "town", f: true, d: 0.18, g: "Tasmania — north & west", st: "TAS",
+  strahan: { n: "Strahan", k: "town", f: true, d: 0.18, wk: true, g: "Tasmania — north & west", st: "TAS",
     hrs: "~7am–7pm", fac: ["Fuel", "Food", "Toilets"],
     see: "Gordon River cruise; Hogarth Falls walk", stay: "Strahan Beach Tourist Park" },
   derwentbridge: { n: "Derwent Bridge", k: "rh", f: true, d: 0.25, g: "Tasmania — north & west", st: "TAS",
@@ -637,10 +636,10 @@ const NODES = {
   oatlands: { n: "Oatlands", k: "town", f: true, d: 0.1, g: "Tasmania — south & east", st: "TAS",
     hrs: "~7am–7pm", fac: ["Fuel", "Bakery", "Toilets"],
     see: "Callington Mill; Georgian sandstone streetscape", stay: "Lakeside RV area, Lake Dulverton" },
-  sthelens: { n: "St Helens", k: "town", f: true, d: 0.12, g: "Tasmania — south & east", st: "TAS",
+  sthelens: { n: "St Helens", k: "town", f: true, d: 0.12, wk: true, g: "Tasmania — south & east", st: "TAS",
     hrs: "~6am–8pm", fac: ["Fuel", "Supermarket", "Dump point"],
     see: "Bay of Fires just north — orange-lichen beaches", stay: "BIG4 St Helens" },
-  bicheno: { n: "Bicheno", k: "town", f: true, d: 0.14, g: "Tasmania — south & east", st: "TAS",
+  bicheno: { n: "Bicheno", k: "town", f: true, d: 0.14, wk: true, g: "Tasmania — south & east", st: "TAS",
     hrs: "~7am–7pm", fac: ["Fuel", "Food", "Toilets"],
     see: "Blowhole; penguin tours; Freycinet & Wineglass Bay 30 min", stay: "Bicheno East Coast Holiday Park" },
   swansea: { n: "Swansea", k: "town", f: true, d: 0.12, g: "Tasmania — south & east", st: "TAS",
@@ -652,7 +651,7 @@ const NODES = {
   sorell: { n: "Sorell", k: "town", f: true, d: 0.06, g: "Tasmania — south & east", st: "TAS",
     hrs: "~5am–10pm", fac: ["Fuel", "Supermarkets", "Bakery"],
     see: "Junction town — roadside fruit stalls in season", stay: "Barilla Holiday Park nearby" },
-  portarthur: { n: "Port Arthur", k: "town", f: false, d: 0.15, g: "Tasmania — south & east", st: "TAS",
+  portarthur: { n: "Port Arthur", k: "town", f: false, d: 0.15, wk: true, g: "Tasmania — south & east", st: "TAS",
     hrs: "No fuel — fill at Sorell", fac: ["Historic site", "Cafe", "Toilets"],
     see: "Port Arthur Historic Site — allow half a day; Remarkable Cave", stay: "NRMA Port Arthur Holiday Park" },
   hobart: { n: "Hobart", k: "city", f: true, d: 0.05, g: "Tasmania — south & east", st: "TAS",
@@ -671,7 +670,7 @@ const NODES = {
     see: "Croc-spotting cruises; Gregory's boab tree", stay: "Timber Creek Hotel caravan park" },
 
   /* ---- The Kimberley — WA ---- */
-  kununurra: { n: "Kununurra", k: "town", f: true, d: 0.2, g: "The Kimberley — WA", st: "WA",
+  kununurra: { n: "Kununurra", k: "town", f: true, d: 0.2, wk: true, g: "The Kimberley — WA", st: "WA",
     hrs: "~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
     see: "Lake Argyle cruise; Ord River; Mirima mini-Bungles", stay: "Kimberleyland Waterfront Park" },
   warmun: { n: "Warmun (Turkey Creek)", k: "rh", f: true, d: 0.4, g: "The Kimberley — WA", st: "WA",
@@ -689,7 +688,7 @@ const NODES = {
   derby: { n: "Derby", k: "town", f: true, d: 0.25, g: "The Kimberley — WA", st: "WA",
     hrs: "~6am–9pm", fac: ["Fuel", "Supermarket", "Dump point"],
     see: "11-metre tides at the wharf; Boab Prison Tree", stay: "Kimberley Entrance Caravan Park" },
-  broome: { n: "Broome", k: "town", f: true, d: 0.15, g: "The Kimberley — WA", st: "WA",
+  broome: { n: "Broome", k: "town", f: true, d: 0.15, wk: true, g: "The Kimberley — WA", st: "WA",
     hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
     see: "Cable Beach camels at sunset; Staircase to the Moon", stay: "Cable Beach Caravan Park" },
 
@@ -717,10 +716,10 @@ const NODES = {
   minilya: { n: "Minilya Roadhouse", k: "rh", f: true, d: 0.4, g: "Ningaloo & Gascoyne — WA", st: "WA",
     hrs: "Roadhouse ~6am–9pm", fac: ["Fuel", "Meals", "Van sites"],
     see: "The Exmouth / Coral Bay turnoff", stay: "Minilya Roadhouse sites" },
-  coralbay: { n: "Coral Bay", k: "town", f: true, d: 0.3, g: "Ningaloo & Gascoyne — WA", st: "WA",
+  coralbay: { n: "Coral Bay", k: "town", f: true, d: 0.3, wk: true, g: "Ningaloo & Gascoyne — WA", st: "WA",
     hrs: "~7am–7pm", fac: ["Fuel", "Store", "Toilets"],
     see: "Snorkel Ningaloo straight off the beach", stay: "Peoples Park Coral Bay" },
-  exmouth: { n: "Exmouth", k: "town", f: true, d: 0.15, g: "Ningaloo & Gascoyne — WA", st: "WA",
+  exmouth: { n: "Exmouth", k: "town", f: true, d: 0.15, wk: true, g: "Ningaloo & Gascoyne — WA", st: "WA",
     hrs: "~5am–10pm", fac: ["Fuel", "Supermarket", "Dump point"],
     see: "Whale sharks (Mar–Jul); Turquoise Bay drift snorkel", stay: "RAC Exmouth Cape Holiday Park" },
   carnarvon: { n: "Carnarvon", k: "town", f: true, d: 0.15, g: "Ningaloo & Gascoyne — WA", st: "WA",
@@ -734,7 +733,7 @@ const NODES = {
   northampton: { n: "Northampton", k: "town", f: true, d: 0.1, g: "Batavia & Turquoise coast — WA", st: "WA",
     hrs: "~6am–8pm", fac: ["Fuel", "Food", "Toilets"],
     see: "Heritage-listed main street; Kalbarri turnoff", stay: "Northampton caravan park" },
-  kalbarri: { n: "Kalbarri", k: "town", f: true, d: 0.15, g: "Batavia & Turquoise coast — WA", st: "WA",
+  kalbarri: { n: "Kalbarri", k: "town", f: true, d: 0.15, wk: true, g: "Batavia & Turquoise coast — WA", st: "WA",
     hrs: "~6am–8pm", fac: ["Fuel", "Supermarket", "Toilets"],
     see: "Nature's Window; Skywalk; coastal cliffs", stay: "Kalbarri Anchorage Caravan Park" },
   geraldton: { n: "Geraldton", k: "city", f: true, d: 0.06, g: "Batavia & Turquoise coast — WA", st: "WA",
@@ -796,10 +795,10 @@ const NODES = {
   kynuna: { n: "Kynuna", k: "town", f: true, d: 0.2, g: "Matilda Country — QLD", st: "QLD",
     hrs: "~7am–9pm", fac: ["Fuel", "Pub", "Toilets"],
     see: "Blue Heeler Hotel; Combo Waterhole (Waltzing Matilda)", stay: "Blue Heeler sites" },
-  winton: { n: "Winton", k: "town", f: true, d: 0.15, g: "Matilda Country — QLD", st: "QLD",
+  winton: { n: "Winton", k: "town", f: true, d: 0.15, wk: true, g: "Matilda Country — QLD", st: "QLD",
     hrs: "~6am–9pm", fac: ["Fuel", "Supermarket", "Dump point"],
     see: "Waltzing Matilda Centre; dinosaur stampede at Lark Quarry", stay: "Matilda Country Tourist Park" },
-  longreach: { n: "Longreach", k: "town", f: true, d: 0.12, g: "Matilda Country — QLD", st: "QLD",
+  longreach: { n: "Longreach", k: "town", f: true, d: 0.12, wk: true, g: "Matilda Country — QLD", st: "QLD",
     hrs: "~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
     see: "Qantas Founders Museum; Stockman's Hall of Fame", stay: "Longreach Tourist Park" },
   barcaldine: { n: "Barcaldine", k: "town", f: true, d: 0.12, g: "Matilda Country — QLD", st: "QLD",
@@ -811,7 +810,7 @@ const NODES = {
   tambo: { n: "Tambo", k: "town", f: true, d: 0.12, g: "Matilda Country — QLD", st: "QLD",
     hrs: "~7am–7pm", fac: ["Fuel", "Food", "Toilets"],
     see: "Tambo Teddies workshop", stay: "Tambo Mill van sites" },
-  charleville: { n: "Charleville", k: "town", f: true, d: 0.1, g: "Matilda Country — QLD", st: "QLD",
+  charleville: { n: "Charleville", k: "town", f: true, d: 0.1, wk: true, g: "Matilda Country — QLD", st: "QLD",
     hrs: "~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
     see: "Cosmos Centre stargazing; bilby encounters", stay: "Bailey Bar Caravan Park" },
   mitchell: { n: "Mitchell", k: "town", f: true, d: 0.08, g: "Matilda Country — QLD", st: "QLD",
@@ -836,6 +835,37 @@ const NODES = {
   emerald: { n: "Emerald", k: "town", f: true, d: 0.06, g: "Central highlands — QLD", st: "QLD",
     hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
     see: "Gemfields fossicking (sapphires) 45 min west", stay: "Lake Maraboon Holiday Village" },
+
+  /* ---- Great Ocean Road — VIC ---- */
+  torquay: { n: "Torquay", k: "town", f: true, d: 0.02, wk: true, g: "Great Ocean Road — VIC", st: "VIC",
+    hrs: "~5am–10pm", fac: ["Fuel", "Supermarkets", "Toilets"],
+    see: "Bells Beach; surf museum; the GOR's front door", stay: "Torquay Foreshore Caravan Park" },
+  apollobay: { n: "Apollo Bay", k: "town", f: true, d: 0.08, wk: true, g: "Great Ocean Road — VIC", st: "VIC",
+    hrs: "~6am–9pm", fac: ["Fuel", "Supermarket", "Toilets"],
+    see: "Harbour town under the Otways; Maits Rest rainforest walk", stay: "Apollo Bay Holiday Park" },
+  portcampbell: { n: "Port Campbell", k: "town", f: true, d: 0.1, wk: true, g: "Great Ocean Road — VIC", st: "VIC",
+    hrs: "~7am–8pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "Twelve Apostles & Loch Ard Gorge on the doorstep", stay: "Port Campbell Holiday Park" },
+  warrnambool: { n: "Warrnambool", k: "town", f: true, d: 0.03, wk: true, g: "Great Ocean Road — VIC", st: "VIC",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Southern right whales at Logans Beach (Jun–Sep)", stay: "Surfside Holiday Park" },
+  portfairy: { n: "Port Fairy", k: "town", f: true, d: 0.05, g: "Great Ocean Road — VIC", st: "VIC",
+    hrs: "~6am–9pm", fac: ["Fuel", "Supermarket", "Bakery"],
+    see: "Whalers&rsquo; cottages; Griffiths Island lighthouse walk", stay: "Gardens Caravan Park" },
+  portland: { n: "Portland", k: "town", f: true, d: 0.04, g: "Great Ocean Road — VIC", st: "VIC",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarket", "Dump point"],
+    see: "Victoria&rsquo;s first settlement; cable tram; gannet colony", stay: "NRMA Portland Bay" },
+
+  /* ---- Limestone Coast — SA ---- */
+  mtgambier: { n: "Mount Gambier", k: "town", f: true, d: 0.03, wk: true, g: "Limestone Coast — SA", st: "SA",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "The Blue Lake (best Nov–Mar); Umpherston Sinkhole", stay: "BIG4 Blue Lake Holiday Park" },
+  robe: { n: "Robe", k: "town", f: true, d: 0.08, wk: true, g: "Limestone Coast — SA", st: "SA",
+    hrs: "~6am–9pm", fac: ["Fuel", "Supermarket", "Bakery"],
+    see: "The Obelisk; famous doughnut van; Long Beach drive", stay: "Discovery Parks Robe" },
+  meningie: { n: "Meningie", k: "town", f: true, d: 0.06, g: "Limestone Coast — SA", st: "SA",
+    hrs: "~6am–8pm", fac: ["Fuel", "Food", "Toilets"],
+    see: "Lake Albert pelicans; the Coorong&rsquo;s dune country", stay: "Lake Albert Caravan Park" },
 };
 
 const EDGES = [
@@ -910,6 +940,10 @@ const EDGES = [
   ["mitchell","roma",88,"f"], ["roma","miles",141,"f"], ["miles","dalby",129,"f"],
   ["dalby","toowoomba",84,"f"], ["toowoomba","brisbane",127,"h"],
   ["barcaldine","emerald",307,"f"], ["emerald","rockhampton",270,"f"],
+  ["geelong","torquay",24,"r"], ["torquay","apollobay",91,"h"], ["apollobay","portcampbell",98,"h"],
+  ["portcampbell","warrnambool",66,"r"], ["warrnambool","portfairy",28,"f"], ["portfairy","portland",72,"r"],
+  ["portland","mtgambier",105,"f"], ["mtgambier","robe",130,"r"], ["robe","meningie",192,"f"],
+  ["meningie","tailembend",60,"f"],
 ];
 
 const ADJ = {};
@@ -943,20 +977,27 @@ function findPath(from, to) {
   return ids;
 }
 
-const PRESETS = [
-  { name: "Adelaide → Melbourne", stops: ["adelaide", "melbourne"] },
-  { name: "Flinders weekender",   stops: ["adelaide", "wilpena"] },
-  { name: "Adelaide → Uluru",     stops: ["adelaide", "yulara"] },
-  { name: "Outback loop",         stops: ["adelaide", "cooberpedy", "yulara", "alicesprings"] },
-  { name: "Across the Nullarbor", stops: ["adelaide", "perth"] },
-  { name: "Adelaide → Darwin",    stops: ["adelaide", "darwin"] },
-  { name: "Adelaide → Broken Hill", stops: ["adelaide", "brokenhill"] },
-  { name: "Brisbane → Cairns",     stops: ["brisbane", "cairns"] },
-  { name: "Melbourne → Hobart",    stops: ["melbourne", "hobart"] },
-  { name: "Darwin → Broome",       stops: ["darwin", "broome"] },
-  { name: "Perth → Exmouth",       stops: ["perth", "exmouth"] },
-  { name: "The Outback Way",       stops: ["winton", "alicesprings", "yulara", "laverton"] },
-  { name: "The Big Lap",           stops: ["adelaide", "melbourne", "sydney", "brisbane", "cairns", "darwin", "broome", "perth", "adelaide"] },
+const TRIPS = [
+  { id: "biglap", name: "The Big Lap", lap: true,
+    blurb: "The one on every caravanner\u2019s list \u2014 roughly 14,000 km right around the country. Chase the warmth: most rigs do the Top End and the Kimberley in the dry (May\u2013Sep), so pick a direction that lands you up north in winter. Whitsundays, Katherine Gorge, Cable Beach, Ningaloo, the Nullarbor \u2014 all of it, one lap." },
+  { id: "gor", name: "Great Ocean Road & Limestone Coast",
+    stops: ["melbourne", "apollobay", "portcampbell", "mtgambier", "robe", "adelaide"],
+    blurb: "Australia\u2019s most famous drive, then the quiet brilliant bit most people skip. Wind past Bells Beach and Lorne to Apollo Bay, stand at the Twelve Apostles, then keep going \u2014 whales at Warrnambool (Jun\u2013Sep), the Blue Lake at Mount Gambier, doughnuts in Robe and the Coorong\u2019s dunes on the run home." },
+  { id: "nullarbor", name: "Across the Nullarbor", stops: ["adelaide", "perth"],
+    blurb: "The crossing that earns you the sticker. Whales at the Head of Bight (May\u2013Oct), the Bunda cliffs dropping into the Southern Ocean, a hole on the world\u2019s longest golf course, and the 90 Mile Straight. Roadhouse rhythm at its finest \u2014 the fill plan below is your best mate out here." },
+  { id: "centre", name: "Straight up the Centre", stops: ["adelaide", "yulara", "alicesprings", "darwin"],
+    blurb: "The Explorer\u2019s Way through the heart of it all. Sleep underground in Coober Pedy, take the Uluru detour that isn\u2019t optional, watch sunrise at the Devils Marbles, soak at Mataranka\u2019s thermal pools and cruise Katherine Gorge before Darwin\u2019s markets and sunsets." },
+  { id: "eastcoast", name: "East Coast Classic", stops: ["sydney", "cairns"],
+    blurb: "Beaches all the way up. Koalas at Port Macquarie, a Byron day trip from Ballina, whales off Hervey Bay, turtles at Bundaberg (Nov\u2013Mar), sailing the Whitsundays out of Airlie, Magnetic Island from Townsville, and the reef itself from Cairns." },
+  { id: "tassie", name: "Lap of Tassie",
+    stops: ["melbourne", "devonport", "strahan", "hobart", "portarthur", "sthelens", "devonport"],
+    blurb: "Ship the rig across Bass Strait and do the island properly. Murals at Sheffield and Cradle Country beyond, the Gordon River from Strahan, MONA and Salamanca in Hobart, Port Arthur\u2019s heavy history, then the east coast run home \u2014 Wineglass Bay, Bicheno\u2019s penguins, the Bay of Fires." },
+  { id: "outbackway", name: "The Outback Way",
+    stops: ["winton", "alicesprings", "yulara", "laverton"],
+    blurb: "Australia\u2019s longest shortcut \u2014 dinosaurs at Winton, the Plenty Highway\u2019s station country, the red heart and Uluru, then the Great Central Road to the Goldfields. Genuine dirt-road adventure: off-road van territory, carry extra everything, permits sorted before you go." },
+  { id: "matilda", name: "Matilda Country",
+    stops: ["brisbane", "roma", "longreach", "winton"],
+    blurb: "Waltzing Matilda country on full bitumen. Roma\u2019s cattle sales, artesian hot soaks at Mitchell and Blackall, the Qantas Founders Museum and Stockman\u2019s Hall of Fame in Longreach, dinosaur stampedes at Winton \u2014 and outback pubs like the Walkabout Creek all the way." },
 ];
 
 const STATE_GROUPS = [
@@ -1033,6 +1074,9 @@ const COORDS = {
   blackall:[-24.42,145.46], tambo:[-24.88,146.26], charleville:[-26.4,146.24],
   mitchell:[-26.49,147.98], roma:[-26.57,148.79], miles:[-26.66,150.19],
   dalby:[-27.18,151.26], toowoomba:[-27.56,151.95], emerald:[-23.53,148.16],
+  torquay:[-38.33,144.32], apollobay:[-38.76,143.67], portcampbell:[-38.62,142.99],
+  warrnambool:[-38.38,142.48], portfairy:[-38.39,142.24], portland:[-38.34,141.6],
+  mtgambier:[-37.83,140.78], robe:[-37.16,139.76], meningie:[-35.69,139.34],
 };
 
 /* WMO weather codes → label + emoji */
@@ -1349,6 +1393,205 @@ function RouteMap({ route, waypoints, fills, dayAt, stays }) {
 }
 
 
+/* ============ Trip ideas: curated runs + weekender planner ============ */
+
+const LAP_RING = ["adelaide", "melbourne", "sydney", "brisbane", "cairns", "darwin", "broome", "perth"];
+
+function bigLapFrom(startId, dir) {
+  const i = Math.max(0, LAP_RING.indexOf(startId));
+  const rot = [...LAP_RING.slice(i), ...LAP_RING.slice(0, i)];
+  const seq = dir === "cw" ? [rot[0], ...rot.slice(1).reverse()] : rot;
+  return [...seq, startId];
+}
+
+function measureTrip(stops) {
+  let km = 0, dirt = 0, ferry = false;
+  for (let i = 0; i < stops.length - 1; i++) {
+    const part = findPath(stops[i], stops[i + 1]);
+    if (!part) return { km: 0, dirt: 0, ferry: false, ok: false };
+    for (let j = 1; j < part.length; j++) {
+      const e = ADJ[part[j - 1]].find((x) => x.to === part[j]);
+      if (e.t === "y") { ferry = true; continue; }
+      km += e.km;
+      if (e.t === "u") dirt += e.km;
+    }
+  }
+  return { km, dirt, ferry, ok: true };
+}
+
+/* Short-break suggestions: sealed roads only, no ferries. Three picks
+   spread near / middle / far so there is always a lazy option and a
+   road-trip option. Lay nights fill whatever driving does not use. */
+function weekendPicks(startId, days) {
+  const dist = {}, done = {};
+  Object.keys(NODES).forEach((id) => (dist[id] = Infinity));
+  dist[startId] = 0;
+  for (;;) {
+    let u = null;
+    Object.keys(dist).forEach((id) => {
+      if (!done[id] && dist[id] < (u === null ? Infinity : dist[u])) u = id;
+    });
+    if (u === null || dist[u] === Infinity) break;
+    done[u] = true;
+    (ADJ[u] || []).forEach((e) => {
+      if (e.t === "y" || e.t === "u") return;
+      if (dist[u] + e.km < dist[e.to]) dist[e.to] = dist[u] + e.km;
+    });
+  }
+  const minOne = 70, maxOne = days * 170;
+  const leaf = (id) => (ADJ[id] || []).filter((e) => e.t !== "y").length === 1;
+  const score = (id) =>
+    (NODES[id].wk ? 4 : 0) + (leaf(id) ? 3 : 0) + (NODES[id].k === "town" ? 1 : 0);
+  const tierOf = (d) => Math.min(2, Math.floor(((d - minOne) / (maxOne - minOne)) * 3));
+  const best = [null, null, null];
+  Object.keys(NODES).forEach((id) => {
+    if (id === startId || NODES[id].k === "rh") return;
+    const d = dist[id];
+    if (!(d >= minOne && d <= maxOne)) return;
+    const t = tierOf(d);
+    const b = best[t];
+    if (b === null || score(id) > score(b) || (score(id) === score(b) && d > dist[b])) best[t] = id;
+  });
+  return best.filter(Boolean).map((id) => {
+    const drive = Math.max(1, Math.ceil((2 * dist[id]) / 420));
+    return { id, km: Math.round(dist[id] * 2), lay: Math.max(0, days - drive) };
+  });
+}
+
+const WK_LENGTHS = [
+  { days: 4, label: "Long weekender" },
+  { days: 7, label: "Week away" },
+  { days: 14, label: "Fortnight" },
+];
+
+function TripIdeas({ onLoad }) {
+  const [openId, setOpenId] = useState(null);
+  const [lapStart, setLapStart] = useState("adelaide");
+  const [lapDir, setLapDir] = useState("acw");
+  const [wkStart, setWkStart] = useState("adelaide");
+  const [wkDays, setWkDays] = useState(4);
+
+  const lapStops = useMemo(() => bigLapFrom(lapStart, lapDir), [lapStart, lapDir]);
+  const picks = useMemo(() => weekendPicks(wkStart, wkDays), [wkStart, wkDays]);
+
+  return (
+    <div className="jp-card p-5">
+      <div className="flex items-center gap-2 mb-1">
+        <Compass size={18} style={{ color: "var(--sign)" }} aria-hidden />
+        <span className="jp-eyebrow">Trip ideas</span>
+      </div>
+      <p className="jp-note mb-1">Tap a classic for the pitch, load it, then make it yours.</p>
+
+      {TRIPS.map((t) => {
+        const open = openId === t.id;
+        const stops = t.lap ? lapStops : t.stops;
+        const m = open ? measureTrip(stops) : null;
+        return (
+          <div key={t.id}>
+            <button type="button" className="jp-triprow" aria-expanded={open}
+                    onClick={() => setOpenId(open ? null : t.id)}>
+              <span className="font-semibold">{t.name}</span>
+              <ChevronDown size={16} aria-hidden
+                           style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 160ms" }} />
+            </button>
+            {open && (
+              <div className="jp-guide" style={{ margin: "0 0 0.6rem 0" }}>
+                <p>{t.blurb}</p>
+                {t.lap && (
+                  <div className="jp-pickgrid">
+                    <div>
+                      <label className="block text-sm font-semibold mb-1" htmlFor="lapstart">Start from</label>
+                      <select id="lapstart" className="jp-field" value={lapStart}
+                              onChange={(e) => setLapStart(e.target.value)}>
+                        {LAP_RING.map((id) => <option key={id} value={id}>{NODES[id].n}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Direction</label>
+                      <div className="flex flex-wrap gap-2" role="group" aria-label="Big Lap direction">
+                        {[["acw", "Anticlockwise"], ["cw", "Clockwise"]].map(([d, lbl]) => (
+                          <button key={d} type="button" className="jp-preset" data-on={lapDir === d}
+                                  onClick={() => setLapDir(d)}>{lbl}</button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {m && m.ok && (
+                  <p className="flex flex-wrap items-center gap-2">
+                    <span className="jp-chip jp-mono">≈ {fmt(m.km)} km</span>
+                    {m.dirt > 0 && (
+                      <span className="jp-chip jp-mono" style={{ color: "var(--red)", borderColor: "var(--red)" }}>
+                        {fmt(m.dirt)} km unsealed
+                      </span>
+                    )}
+                    {m.ferry && <span className="jp-chip">⛴️ ferry crossing</span>}
+                    {t.lap && stops.length > 1 && (
+                      <span className="jp-chip">First leg: {NODES[stops[0]].n} → {NODES[stops[1]].n}</span>
+                    )}
+                  </p>
+                )}
+                <p>
+                  <button type="button" className="jp-load" onClick={() => onLoad(stops)}>
+                    Load this trip
+                  </button>
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <div className="mt-4 pt-3" style={{ borderTop: "1.5px solid var(--line)" }}>
+        <span className="jp-eyebrow">Short on time?</span>
+        <p className="jp-note mt-1 mb-2">
+          Pick how long you&rsquo;ve got and where from — JourneyPro shapes a return trip
+          to fit, lay days at the far end included.
+        </p>
+        <div className="flex flex-wrap gap-2 mb-2" role="group" aria-label="Trip length">
+          {WK_LENGTHS.map((w) => (
+            <button key={w.days} type="button" className="jp-preset" data-on={wkDays === w.days}
+                    onClick={() => setWkDays(w.days)}>
+              {w.label} · {w.days} days
+            </button>
+          ))}
+        </div>
+        <label className="block text-sm font-semibold mb-1" htmlFor="wkstart">Departing from</label>
+        <select id="wkstart" className="jp-field" value={wkStart}
+                onChange={(e) => setWkStart(e.target.value)}>
+          {STATE_GROUPS.map(([st, label]) => (
+            <optgroup key={st} label={label}>
+              {Object.entries(NODES).filter(([, n]) => n.st === st)
+                .sort((a, b) =>
+                  (a[1].k === "city" ? 0 : 1) - (b[1].k === "city" ? 0 : 1) ||
+                  a[1].n.localeCompare(b[1].n))
+                .map(([id, n]) => (
+                  <option key={id} value={id}>{n.n}</option>
+                ))}
+            </optgroup>
+          ))}
+        </select>
+        {picks.length === 0 ? (
+          <p className="jp-note mt-2">No tidy short loops from out here — try a longer trip length.</p>
+        ) : (
+          <div className="flex flex-col gap-2 mt-2">
+            {picks.map((p) => (
+              <button key={p.id} type="button" className="jp-wkpick"
+                      onClick={() => onLoad([wkStart, p.id, wkStart], p.lay > 0 ? { [p.id]: p.lay } : {})}>
+                <span className="font-semibold">{NODES[p.id].n}</span>
+                <span className="jp-mono text-sm">
+                  {fmt(p.km)} km round{p.lay > 0 ? " · " + p.lay + (p.lay === 1 ? " lay night" : " lay nights") : ""}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 export default function JourneyPro() {
   const [makeIdx, setMakeIdx] = useState(1);
   const [modelIdx, setModelIdx] = useState(0);
@@ -1545,6 +1788,13 @@ export default function JourneyPro() {
     setOpenIdx(null);
     setWx({ status: "idle", byId: {} });
   };
+  const loadSuggested = (stops, staysObj = {}) => {
+    setWaypoints(stops.filter((id) => NODES[id]));
+    setStays(staysObj);
+    setOpenIdx(null);
+    setWx({ status: "idle", byId: {} });
+  };
+
   const saveTrip = async () => {
     const name = (tripName || "My trip").trim();
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "trip";
@@ -1794,6 +2044,17 @@ export default function JourneyPro() {
         .jp-key-r { background: var(--sign); border-radius: 999px; border: 1.5px solid #fff; }
         .jp-key-f { background: var(--amber); border-radius: 999px; border: 1.5px solid var(--ink); }
         .jp-key-u { background: var(--amber); border: 1.5px dashed var(--ink); }
+        .jp-triprow { width: 100%; background: none; border: 0; border-top: 1px solid var(--line);
+          padding: 0.6rem 0; margin: 0; font: inherit; color: inherit; text-align: left;
+          display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; cursor: pointer; }
+        .jp-triprow:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; border-radius: 8px; }
+        .jp-load { background: var(--sign); color: #fff; border: 0; border-radius: 999px;
+          padding: 0.45rem 1.1rem; font-weight: 700; font-family: inherit; font-size: 0.85rem; cursor: pointer; }
+        .jp-load:focus-visible { outline: 3px solid var(--amber); outline-offset: 1px; }
+        .jp-wkpick { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+          width: 100%; background: var(--paper); border: 1.5px solid var(--line); border-radius: 10px;
+          padding: 0.55rem 0.8rem; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+        .jp-wkpick:focus-visible { outline: 3px solid var(--amber); }
       `}</style>
 
       <header className="max-w-6xl mx-auto px-4 pt-8 pb-2">
@@ -1811,7 +2072,7 @@ export default function JourneyPro() {
           </div>
           <span className="jp-display text-sm font-semibold tracking-widest uppercase px-3 py-1 rounded-md"
                 style={{ background: "var(--amber)", color: "var(--ink)" }}>
-            Prototype v0.11
+            Prototype v0.12
           </span>
         </div>
       </header>
@@ -2078,16 +2339,6 @@ export default function JourneyPro() {
               ))}
             </select>
 
-            <p className="jp-note mt-2 mb-1">Or load a classic:</p>
-            <div className="flex flex-wrap gap-2">
-              {PRESETS.map((p) => (
-                <button key={p.name} type="button" className="jp-preset"
-                        onClick={() => { setWaypoints(p.stops); setOpenIdx(null); setWx({ status: "idle", byId: {} }); }}>
-                  {p.name}
-                </button>
-              ))}
-            </div>
-
             <div className="mt-4">
               <span className="jp-eyebrow">Saved trips</span>
               {!storageOk && <p className="jp-note mt-1">Saving isn&rsquo;t available in this browser.</p>}
@@ -2126,6 +2377,8 @@ export default function JourneyPro() {
               </p>
             </div>
           </div>
+
+          <TripIdeas onLoad={loadSuggested} />
 
           <div className="jp-card p-5">
             <div className="flex items-center gap-2 mb-3">
