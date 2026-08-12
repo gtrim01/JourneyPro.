@@ -2140,7 +2140,7 @@ export default function JourneyPro() {
               </h1>
             </div>
             <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
-              Know the trip before you tow it.
+              Plan the trip before you tow.
             </p>
           </div>
           <span className="jp-display text-sm font-semibold tracking-widest uppercase px-3 py-1 rounded-md"
