@@ -24,18 +24,16 @@ if (typeof window !== "undefined" && !window.storage) {
 }
 
 /* ============================================================
-   JourneyPro — Prototype v0.17 (the card, done properly)
-   · Trip Story redesigned around one hero: the map now ZOOMS
-     to your route's own shape instead of drowning it in the
-     national network; disciplined spacing bands, legible
-     sign-green stat labels (the old ones were colliding with
-     the amber strip), rig line with the diamond motif, day
-     pill, nothing touching an edge
-   · Travel Mode scrubber: the bar is now a slider — drag to
-     any stop on the trip to see its leg, fuel, weather and
-     guide; "Back to today" returns to the live position,
-     "I'm here now" moves the trip to wherever you slid
-   · Plus everything from v0.16
+   JourneyPro — Prototype v0.24 (first light: live fuel)
+   · Live fuel prices arrive — Western Australia live TODAY
+     via FuelWatch (no key, prices fixed daily by law), with
+     NSW & Tasmania wired and waiting on a free FuelCheck key
+   · Stop guides show today's real price for YOUR fuel type:
+     "Live diesel: from $1.95 — avg $1.99 (3 stations)"
+   · Travel Mode shows the live price at your fill-up stop
+   · Planning maths stays on the app's estimates; live prices
+     are today's reality check beside them
+   · Plus everything from v0.23
    Curated prototype dataset — figures are realistic estimates
    ============================================================ */
 
@@ -56,14 +54,14 @@ const FUEL_META = {
 const VEHICLE_DATA = [
   { make: "Toyota", models: [
     { model: "HiLux", variants: [
-      { v: "2.8 Turbo-Diesel 4×4", yr: "2015–now", fuel: "diesel", tank: 80,  real: 9.5,  tow: 3500 },
-      { v: "2.4 Turbo-Diesel 4×4", yr: "2015–now", fuel: "diesel", tank: 80,  real: 9.0,  tow: 3200 },
+      { v: "2.8 Turbo-Diesel 4×4", yr: "2015–now", fuel: "diesel", tank: 80, real: 9.5, tow: 3500 },
+      { v: "2.4 Turbo-Diesel 4×4", yr: "2015–now", fuel: "diesel", tank: 80, real: 9, tow: 3200 },
     ]},
     { model: "LandCruiser 300", variants: [
       { v: "3.3 V6 Turbo-Diesel", yr: "2021–now", fuel: "diesel", tank: 110, real: 11.2, tow: 3500 },
     ]},
     { model: "LandCruiser 200", variants: [
-      { v: "4.5 V8 Turbo-Diesel", yr: "2007–21",  fuel: "diesel", tank: 138, real: 13.5, tow: 3500 },
+      { v: "4.5 V8 Turbo-Diesel", yr: "2007–21", fuel: "diesel", tank: 138, real: 13.5, tow: 3500 },
     ]},
     { model: "LandCruiser 70 Series", variants: [
       { v: "4.5 V8 Turbo-Diesel", yr: "2007–now", fuel: "diesel", tank: 130, real: 12.8, tow: 3500 },
@@ -71,28 +69,50 @@ const VEHICLE_DATA = [
     ]},
     { model: "Prado", variants: [
       { v: "2.8 TD (150, twin tank)", yr: "2015–23", fuel: "diesel", tank: 150, real: 10.2, tow: 3000 },
-      { v: "2.8 TD (250 series)",     yr: "2024–now", fuel: "diesel", tank: 110, real: 10.0, tow: 3500 },
+      { v: "2.8 TD (250 series)", yr: "2024–now", fuel: "diesel", tank: 110, real: 10, tow: 3500 },
     ]},
     { model: "Fortuner", variants: [
       { v: "2.8 Turbo-Diesel", yr: "2015–now", fuel: "diesel", tank: 80, real: 9.8, tow: 3100 },
     ]},
     { model: "Kluger", variants: [
       { v: "2.4 Turbo petrol", yr: "2021–now", fuel: "u91", tank: 68, real: 10.8, tow: 2000 },
+      { v: "2.5 Hybrid AWD", yr: "2021–now", fuel: "u91", tank: 65, real: 6.9, tow: 2000 },
+    ]},
+    { model: "LandCruiser 100", variants: [
+      { v: "4.2 Turbo-Diesel", yr: "1998–2007", fuel: "diesel", tank: 145, real: 12.8, tow: 3500 },
+    ]},
+    { model: "Tundra", variants: [
+      { v: "3.4 V6 Hybrid i-Force Max", yr: "2024–now", fuel: "u91", tank: 122, real: 13.5, tow: 4500 },
+    ]},
+    { model: "RAV4", variants: [
+      { v: "2.5 Hybrid AWD", yr: "2019–now", fuel: "u91", tank: 55, real: 6.3, tow: 1500 },
+    ]},
+    { model: "HiAce", variants: [
+      { v: "2.8 Turbo-Diesel", yr: "2019–now", fuel: "diesel", tank: 70, real: 10.2, tow: 1900 },
     ]},
   ]},
   { make: "Ford", models: [
     { model: "Ranger", variants: [
-      { v: "2.0 Bi-Turbo Diesel",  yr: "2022–now", fuel: "diesel", tank: 80, real: 9.4,  tow: 3500 },
-      { v: "3.0 V6 Turbo-Diesel",  yr: "2022–now", fuel: "diesel", tank: 80, real: 10.4, tow: 3500 },
-      { v: "3.2 Turbo-Diesel (PX)", yr: "2011–22", fuel: "diesel", tank: 80, real: 10.0, tow: 3500 },
-      { v: "Raptor 3.0 TT petrol", yr: "2022–now", fuel: "p95",   tank: 80, real: 13.5, tow: 2500 },
+      { v: "2.0 Bi-Turbo Diesel", yr: "2022–now", fuel: "diesel", tank: 80, real: 9.4, tow: 3500 },
+      { v: "3.0 V6 Turbo-Diesel", yr: "2022–now", fuel: "diesel", tank: 80, real: 10.4, tow: 3500 },
+      { v: "3.2 Turbo-Diesel (PX)", yr: "2011–22", fuel: "diesel", tank: 80, real: 10, tow: 3500 },
+      { v: "Raptor 3.0 TT petrol", yr: "2022–now", fuel: "p95", tank: 80, real: 13.5, tow: 2500 },
     ]},
     { model: "Everest", variants: [
       { v: "3.0 V6 Turbo-Diesel", yr: "2022–now", fuel: "diesel", tank: 80, real: 10.6, tow: 3500 },
-      { v: "2.0 Bi-Turbo Diesel", yr: "2022–now", fuel: "diesel", tank: 80, real: 9.8,  tow: 3500 },
+      { v: "2.0 Bi-Turbo Diesel", yr: "2022–now", fuel: "diesel", tank: 80, real: 9.8, tow: 3500 },
     ]},
     { model: "F-150", variants: [
       { v: "3.5 EcoBoost V6", yr: "2023–now", fuel: "u91", tank: 136, real: 14.5, tow: 4500 },
+    ]},
+    { model: "Territory", variants: [
+      { v: "2.7 Turbo-Diesel", yr: "2011–16", fuel: "diesel", tank: 75, real: 10, tow: 2700 },
+    ]},
+    { model: "Falcon", variants: [
+      { v: "4.0 XR6 (FG)", yr: "2008–16", fuel: "u91", tank: 68, real: 11.2, tow: 2300 },
+    ]},
+    { model: "Transit", variants: [
+      { v: "2.0 TD (van / motorhome base)", yr: "2014–now", fuel: "diesel", tank: 80, real: 11.5, tow: 2500 },
     ]},
   ]},
   { make: "Isuzu", models: [
@@ -108,17 +128,34 @@ const VEHICLE_DATA = [
     { model: "BT-50", variants: [
       { v: "3.0 Turbo-Diesel", yr: "2020–now", fuel: "diesel", tank: 76, real: 9.6, tow: 3500 },
     ]},
+    { model: "CX-5", variants: [
+      { v: "2.5 Turbo petrol AWD", yr: "2018–now", fuel: "u91", tank: 58, real: 9.2, tow: 2000 },
+    ]},
+    { model: "CX-8", variants: [
+      { v: "2.2 Twin-Turbo Diesel", yr: "2018–23", fuel: "diesel", tank: 74, real: 7.6, tow: 2000 },
+    ]},
+    { model: "CX-9", variants: [
+      { v: "2.5 Turbo petrol", yr: "2016–23", fuel: "u91", tank: 74, real: 10.2, tow: 2000 },
+    ]},
+    { model: "CX-60", variants: [
+      { v: "3.3 Turbo-Diesel 48V", yr: "2023–now", fuel: "diesel", tank: 58, real: 7.9, tow: 2500 },
+    ]},
   ]},
   { make: "Mitsubishi", models: [
     { model: "Triton", variants: [
-      { v: "2.4 Bi-Turbo Diesel", yr: "2024–now", fuel: "diesel", tank: 75, real: 9.0, tow: 3500 },
-      { v: "2.4 Turbo-Diesel",    yr: "2015–24",  fuel: "diesel", tank: 75, real: 9.3, tow: 3100 },
+      { v: "2.4 Bi-Turbo Diesel", yr: "2024–now", fuel: "diesel", tank: 75, real: 9, tow: 3500 },
+      { v: "2.4 Turbo-Diesel", yr: "2015–24", fuel: "diesel", tank: 75, real: 9.3, tow: 3100 },
     ]},
     { model: "Pajero Sport", variants: [
       { v: "2.4 Turbo-Diesel", yr: "2016–now", fuel: "diesel", tank: 68, real: 9.8, tow: 3100 },
+      { v: "2.4 Turbo-Diesel", yr: "2015–now", fuel: "diesel", tank: 68, real: 9, tow: 3100 },
     ]},
     { model: "Pajero", variants: [
-      { v: "3.2 Turbo-Diesel (NX)", yr: "2015–21", fuel: "diesel", tank: 88, real: 11.0, tow: 3000 },
+      { v: "3.2 Turbo-Diesel (NX)", yr: "2015–21", fuel: "diesel", tank: 88, real: 11, tow: 3000 },
+      { v: "3.2 Turbo-Diesel", yr: "2006–21", fuel: "diesel", tank: 88, real: 10.8, tow: 3000 },
+    ]},
+    { model: "Outlander", variants: [
+      { v: "2.5 AWD", yr: "2021–now", fuel: "u91", tank: 55, real: 8.6, tow: 1600 },
     ]},
   ]},
   { make: "Nissan", models: [
@@ -128,15 +165,34 @@ const VEHICLE_DATA = [
     { model: "Patrol", variants: [
       { v: "Y62 5.6 V8 petrol", yr: "2013–now", fuel: "p95", tank: 140, real: 16.5, tow: 3500 },
     ]},
+    { model: "Patrol Y62", variants: [
+      { v: "5.6 V8 petrol", yr: "2013–now", fuel: "p95", tank: 140, real: 15.5, tow: 3500 },
+    ]},
+    { model: "Patrol GU", variants: [
+      { v: "4.2 Turbo-Diesel", yr: "1998–2007", fuel: "diesel", tank: 95, real: 12.8, tow: 3500 },
+    ]},
+    { model: "Pathfinder", variants: [
+      { v: "3.5 V6 AWD", yr: "2022–now", fuel: "u91", tank: 71, real: 11, tow: 2700 },
+    ]},
+    { model: "X-Trail", variants: [
+      { v: "2.5 AWD", yr: "2022–now", fuel: "u91", tank: 55, real: 8.4, tow: 2000 },
+    ]},
   ]},
   { make: "Volkswagen", models: [
     { model: "Amarok", variants: [
-      { v: "3.0 V6 TDI",        yr: "2023–now", fuel: "diesel", tank: 80, real: 10.8, tow: 3500 },
-      { v: "2.0 Bi-Turbo TDI",  yr: "2023–now", fuel: "diesel", tank: 80, real: 9.5,  tow: 3500 },
-      { v: "3.0 V6 TDI 580",    yr: "2017–22",  fuel: "diesel", tank: 80, real: 11.0, tow: 3500 },
+      { v: "3.0 V6 TDI", yr: "2023–now", fuel: "diesel", tank: 80, real: 10.8, tow: 3500 },
+      { v: "2.0 Bi-Turbo TDI", yr: "2023–now", fuel: "diesel", tank: 80, real: 9.5, tow: 3500 },
+      { v: "3.0 V6 TDI 580", yr: "2017–22", fuel: "diesel", tank: 80, real: 11, tow: 3500 },
     ]},
     { model: "Touareg", variants: [
       { v: "3.0 V6 TDI", yr: "2019–now", fuel: "diesel", tank: 90, real: 9.8, tow: 3500 },
+      { v: "3.0 V6 Turbo-Diesel", yr: "2019–now", fuel: "diesel", tank: 90, real: 9.2, tow: 3500 },
+    ]},
+    { model: "Transporter", variants: [
+      { v: "2.0 BiTDI 4Motion", yr: "2016–now", fuel: "diesel", tank: 80, real: 9.8, tow: 3000 },
+    ]},
+    { model: "Crafter", variants: [
+      { v: "2.0 TDI (van / motorhome base)", yr: "2018–now", fuel: "diesel", tank: 75, real: 11, tow: 3000 },
     ]},
   ]},
   { make: "GWM", models: [
@@ -146,33 +202,57 @@ const VEHICLE_DATA = [
     { model: "Tank 300", variants: [
       { v: "2.0 Turbo petrol", yr: "2023–now", fuel: "u91", tank: 75, real: 11.8, tow: 2500 },
     ]},
+    { model: "Cannon Alpha", variants: [
+      { v: "2.4 Turbo-Diesel", yr: "2024–now", fuel: "diesel", tank: 78, real: 9.6, tow: 3500 },
+    ]},
+    { model: "Tank 500", variants: [
+      { v: "2.0 Turbo Hybrid", yr: "2024–now", fuel: "u91", tank: 80, real: 10.4, tow: 3500 },
+    ]},
   ]},
   { make: "LDV", models: [
     { model: "T60 Max", variants: [
       { v: "2.0 Bi-Turbo Diesel", yr: "2021–now", fuel: "diesel", tank: 73, real: 10.6, tow: 3000 },
+    ]},
+    { model: "Deliver 9", variants: [
+      { v: "2.0 TD (van / motorhome base)", yr: "2020–now", fuel: "diesel", tank: 80, real: 11.8, tow: 2500 },
     ]},
   ]},
   { make: "Jeep", models: [
     { model: "Grand Cherokee", variants: [
       { v: "3.0 CRD Diesel", yr: "2013–21", fuel: "diesel", tank: 93, real: 10.5, tow: 3500 },
     ]},
+    { model: "Gladiator", variants: [
+      { v: "3.6 V6 petrol", yr: "2020–now", fuel: "u91", tank: 83, real: 12.6, tow: 2721 },
+    ]},
+    { model: "Wrangler", variants: [
+      { v: "3.6 V6 Unlimited", yr: "2019–now", fuel: "u91", tank: 81, real: 11.8, tow: 2495 },
+    ]},
   ]},
   { make: "Land Rover", models: [
     { model: "Defender 110", variants: [
       { v: "D300 Diesel", yr: "2020–now", fuel: "diesel", tank: 89, real: 10.4, tow: 3500 },
+      { v: "D300 3.0 Turbo-Diesel", yr: "2020–now", fuel: "diesel", tank: 89, real: 9.9, tow: 3500 },
     ]},
     { model: "Discovery", variants: [
       { v: "D300 Diesel", yr: "2021–now", fuel: "diesel", tank: 85, real: 10.2, tow: 3500 },
+      { v: "D300 3.0 Turbo-Diesel", yr: "2021–now", fuel: "diesel", tank: 90, real: 9.6, tow: 3500 },
     ]},
   ]},
   { make: "RAM", models: [
     { model: "1500", variants: [
       { v: "5.7 V8 petrol", yr: "2018–now", fuel: "u91", tank: 98, real: 14.8, tow: 4500 },
+      { v: "5.7 V8 Hemi", yr: "2018–now", fuel: "u91", tank: 98, real: 14.5, tow: 4500 },
+    ]},
+    { model: "2500", variants: [
+      { v: "6.7 Cummins Turbo-Diesel", yr: "2018–now", fuel: "diesel", tank: 117, real: 15.8, tow: 4500 },
     ]},
   ]},
   { make: "Chevrolet", models: [
     { model: "Silverado 1500", variants: [
       { v: "6.2 V8 petrol", yr: "2021–now", fuel: "p95", tank: 91, real: 15.5, tow: 4500 },
+    ]},
+    { model: "Silverado 2500HD", variants: [
+      { v: "6.6 Duramax Turbo-Diesel", yr: "2021–now", fuel: "diesel", tank: 136, real: 16, tow: 4500 },
     ]},
   ]},
   { make: "Kia", models: [
@@ -181,28 +261,184 @@ const VEHICLE_DATA = [
     ]},
     { model: "Sorento", variants: [
       { v: "2.2 Turbo-Diesel", yr: "2020–now", fuel: "diesel", tank: 67, real: 8.6, tow: 2500 },
+      { v: "2.2 Turbo-Diesel AWD", yr: "2020–now", fuel: "diesel", tank: 67, real: 7.8, tow: 2000 },
+    ]},
+    { model: "Carnival", variants: [
+      { v: "2.2 Turbo-Diesel", yr: "2021–now", fuel: "diesel", tank: 72, real: 8.4, tow: 2000 },
     ]},
   ]},
   { make: "Hyundai", models: [
     { model: "Santa Fe", variants: [
       { v: "2.2 Turbo-Diesel", yr: "2018–23", fuel: "diesel", tank: 67, real: 8.5, tow: 2500 },
+      { v: "2.2 Turbo-Diesel AWD", yr: "2018–23", fuel: "diesel", tank: 67, real: 7.9, tow: 2500 },
+    ]},
+    { model: "Palisade", variants: [
+      { v: "2.2 Turbo-Diesel AWD", yr: "2021–now", fuel: "diesel", tank: 71, real: 8.6, tow: 2200 },
+    ]},
+    { model: "Tucson", variants: [
+      { v: "2.0 Turbo-Diesel AWD", yr: "2021–now", fuel: "diesel", tank: 54, real: 7.8, tow: 1900 },
+    ]},
+  ]},
+  { make: "GMC", models: [
+    { model: "Sierra 1500", variants: [
+      { v: "6.2 V8 petrol", yr: "2023–now", fuel: "p95", tank: 91, real: 13.9, tow: 4500 },
+    ]},
+    { model: "Sierra 2500HD", variants: [
+      { v: "6.6 Duramax Turbo-Diesel", yr: "2024–now", fuel: "diesel", tank: 136, real: 16, tow: 4500 },
+    ]},
+  ]},
+  { make: "Holden", models: [
+    { model: "Colorado", variants: [
+      { v: "2.8 Duramax Turbo-Diesel", yr: "2012–20", fuel: "diesel", tank: 76, real: 9.8, tow: 3500 },
+    ]},
+    { model: "Trailblazer", variants: [
+      { v: "2.8 Turbo-Diesel", yr: "2016–20", fuel: "diesel", tank: 76, real: 9.6, tow: 3000 },
+    ]},
+    { model: "Commodore", variants: [
+      { v: "3.6 SV6 (VE/VF)", yr: "2006–17", fuel: "u91", tank: 71, real: 11.5, tow: 2100 },
+      { v: "6.0 V8 SS (VE/VF)", yr: "2006–17", fuel: "u91", tank: 71, real: 13, tow: 2100 },
+    ]},
+  ]},
+  { make: "Subaru", models: [
+    { model: "Outback", variants: [
+      { v: "2.5 AWD", yr: "2021–now", fuel: "u91", tank: 63, real: 8.8, tow: 2000 },
+      { v: "2.4 XT Turbo", yr: "2023–now", fuel: "u91", tank: 63, real: 9.6, tow: 2400 },
+    ]},
+    { model: "Forester", variants: [
+      { v: "2.5 AWD", yr: "2019–now", fuel: "u91", tank: 63, real: 8.5, tow: 1800 },
+    ]},
+  ]},
+  { make: "SsangYong", models: [
+    { model: "Musso", variants: [
+      { v: "2.2 Turbo-Diesel", yr: "2018–now", fuel: "diesel", tank: 75, real: 9.2, tow: 3500 },
+    ]},
+    { model: "Rexton", variants: [
+      { v: "2.2 Turbo-Diesel", yr: "2018–now", fuel: "diesel", tank: 70, real: 9.4, tow: 3500 },
+    ]},
+  ]},
+  { make: "Mercedes-Benz", models: [
+    { model: "GLE", variants: [
+      { v: "300d 2.0 Turbo-Diesel", yr: "2019–now", fuel: "diesel", tank: 85, real: 8.8, tow: 2700 },
+      { v: "400d 3.0 Turbo-Diesel", yr: "2019–now", fuel: "diesel", tank: 85, real: 9.4, tow: 3500 },
+    ]},
+    { model: "Sprinter", variants: [
+      { v: "2.0 CDI (van / motorhome base)", yr: "2019–now", fuel: "diesel", tank: 93, real: 12, tow: 2000 },
+    ]},
+  ]},
+  { make: "Fiat", models: [
+    { model: "Ducato", variants: [
+      { v: "Multijet 180 (van / motorhome base)", yr: "2014–now", fuel: "diesel", tank: 90, real: 12.5, tow: 2000 },
+    ]},
+  ]},
+  { make: "Iveco", models: [
+    { model: "Daily", variants: [
+      { v: "3.0 TD (van / motorhome base)", yr: "2016–now", fuel: "diesel", tank: 100, real: 13, tow: 3500 },
+    ]},
+  ]},
+  { make: "Renault", models: [
+    { model: "Master", variants: [
+      { v: "2.3 TD (van / motorhome base)", yr: "2015–now", fuel: "diesel", tank: 80, real: 11.8, tow: 2500 },
+    ]},
+  ]},
+  { make: "BYD", models: [
+    { model: "Shark 6", variants: [
+      { v: "1.5 Turbo PHEV", yr: "2025–now", fuel: "u91", tank: 60, real: 8.5, tow: 2500 },
+    ]},
+  ]},
+  { make: "Mahindra", models: [
+    { model: "Pik-Up", variants: [
+      { v: "2.2 Turbo-Diesel S11", yr: "2020–now", fuel: "diesel", tank: 80, real: 9.5, tow: 2500 },
+    ]},
+  ]},
+  { make: "Skoda", models: [
+    { model: "Kodiaq", variants: [
+      { v: "2.0 TSI AWD", yr: "2017–now", fuel: "u91", tank: 58, real: 9, tow: 2300 },
+    ]},
+  ]},
+  { make: "Winnebago", models: [
+    { model: "Burleigh", variants: [
+      { v: "C-class (Iveco Daily base)", yr: "2018–now", fuel: "diesel", tank: 100, real: 14.5, tow: 2000 },
+    ]},
+    { model: "Coogee", variants: [
+      { v: "C-class (Iveco Daily base)", yr: "2018–now", fuel: "diesel", tank: 100, real: 14, tow: 2000 },
+    ]},
+  ]},
+  { make: "Avida", models: [
+    { model: "Birdsville", variants: [
+      { v: "C7434 (Iveco Daily base)", yr: "2016–now", fuel: "diesel", tank: 100, real: 14.5, tow: 2000 },
+    ]},
+    { model: "Busselton", variants: [
+      { v: "B7944 (Iveco Daily base)", yr: "2016–now", fuel: "diesel", tank: 100, real: 15, tow: 1500 },
+    ]},
+  ]},
+  { make: "Sunliner", models: [
+    { model: "Habitat", variants: [
+      { v: "H495 (Fiat Ducato base)", yr: "2017–now", fuel: "diesel", tank: 90, real: 13, tow: 2000 },
+    ]},
+    { model: "Switch", variants: [
+      { v: "S541 (Fiat Ducato base)", yr: "2017–now", fuel: "diesel", tank: 90, real: 12.8, tow: 2000 },
+    ]},
+  ]},
+  { make: "Horizon", models: [
+    { model: "Wattle", variants: [
+      { v: "(Mercedes Sprinter base)", yr: "2018–now", fuel: "diesel", tank: 93, real: 11.8, tow: 2000 },
+    ]},
+    { model: "Banksia", variants: [
+      { v: "(VW Crafter base)", yr: "2018–now", fuel: "diesel", tank: 75, real: 11.5, tow: 2000 },
+    ]},
+  ]},
+  { make: "Trakka", models: [
+    { model: "Torino", variants: [
+      { v: "(Fiat Ducato base)", yr: "2016–now", fuel: "diesel", tank: 90, real: 11.8, tow: 2000 },
+    ]},
+    { model: "Jabiru", variants: [
+      { v: "(Mercedes Sprinter base)", yr: "2016–now", fuel: "diesel", tank: 93, real: 11.5, tow: 2000 },
+    ]},
+  ]},
+  { make: "Jayco (motorhome)", models: [
+    { model: "Conquest", variants: [
+      { v: "(Fiat Ducato base)", yr: "2015–now", fuel: "diesel", tank: 90, real: 13.5, tow: 2000 },
+    ]},
+    { model: "Optimum", variants: [
+      { v: "(Iveco Daily base)", yr: "2016–now", fuel: "diesel", tank: 100, real: 14.5, tow: 2500 },
+    ]},
+  ]},
+  { make: "Paradise", models: [
+    { model: "Independence", variants: [
+      { v: "(Iveco Daily base)", yr: "2016–now", fuel: "diesel", tank: 100, real: 15.5, tow: 2000 },
+    ]},
+  ]},
+  { make: "Frontline", models: [
+    { model: "Adventurer", variants: [
+      { v: "campervan (VW Transporter base)", yr: "2016–now", fuel: "diesel", tank: 80, real: 10.5, tow: 1500 },
+    ]},
+  ]},
+  { make: "Talvor", models: [
+    { model: "Murana", variants: [
+      { v: "campervan (Toyota HiAce base)", yr: "2016–now", fuel: "diesel", tank: 70, real: 11, tow: 1400 },
     ]},
   ]},
 ];
+const VEHICLE_VARIANT_COUNT = VEHICLE_DATA.reduce((a, mk) => a + mk.models.reduce((b, mo) => b + mo.variants.length, 0), 0);
+/* A→Z menu order; physical indexes untouched so saved trips stay valid */
+const MAKE_ORDER = VEHICLE_DATA.map((_, i) => i).sort((a, b) => VEHICLE_DATA[a].make.localeCompare(VEHICLE_DATA[b].make));
+const MODEL_ORDER = VEHICLE_DATA.map((mk) => mk.models.map((_, i) => i).sort((a, b) => mk.models[a].model.localeCompare(mk.models[b].model)));
 
 /* ---------- Caravans & campers ---------- */
 const VAN_DATA = [
   { make: "Jayco", models: [
-    { m: "Swan Camper",        style: "camper", len: 14, tare: 1150, atm: 1450 },
-    { m: "Journey Pop-Top 17", style: "pop",    len: 17, tare: 1650, atm: 2100 },
-    { m: "Expanda 16",         style: "pop",    len: 16, tare: 1750, atm: 2250 },
-    { m: "Starcraft 19",       style: "full",   len: 19, tare: 2200, atm: 2800 },
-    { m: "All-Terrain 19",     style: "off",    len: 19, tare: 2500, atm: 3100 },
-    { m: "Silverline 21",      style: "full",   len: 21, tare: 2900, atm: 3300 },
+    { m: "Swan Camper", style: "camper", len: 14, tare: 1150, atm: 1450 },
+    { m: "Journey Pop-Top 17", style: "pop", len: 17, tare: 1650, atm: 2100 },
+    { m: "Expanda 16", style: "pop", len: 16, tare: 1750, atm: 2250 },
+    { m: "Starcraft 19", style: "full", len: 19, tare: 2200, atm: 2800 },
+    { m: "All-Terrain 19", style: "off", len: 19, tare: 2500, atm: 3100 },
+    { m: "Silverline 21", style: "full", len: 21, tare: 2900, atm: 3300 },
+    { m: "Eagle Camper", style: "camper", len: 14, tare: 1250, atm: 1550 },
+    { m: "CrossTrak 13", style: "off", len: 13, tare: 1680, atm: 2100 },
   ]},
   { make: "New Age", models: [
     { m: "Oz Classic 18", style: "full", len: 18, tare: 2100, atm: 2800 },
-    { m: "Manta Ray 20",  style: "full", len: 20, tare: 2400, atm: 3000 },
+    { m: "Manta Ray 20", style: "full", len: 20, tare: 2400, atm: 3000 },
   ]},
   { make: "Coromal", models: [
     { m: "Appeal 18", style: "full", len: 18, tare: 2050, atm: 2600 },
@@ -228,7 +464,111 @@ const VAN_DATA = [
   { make: "Cub", models: [
     { m: "Frontier Camper", style: "camper", len: 13, tare: 1250, atm: 1650 },
   ]},
+  { make: "Avan", models: [
+    { m: "Aliner 2", style: "camper", len: 12, tare: 850, atm: 1100 },
+    { m: "Cruiseliner 2D", style: "camper", len: 13, tare: 950, atm: 1250 },
+    { m: "Aspire 499", style: "full", len: 16, tare: 1500, atm: 1900 },
+    { m: "Aspire 555", style: "full", len: 18, tare: 1750, atm: 2200 },
+  ]},
+  { make: "Regent", models: [
+    { m: "Cruiser 21'6", style: "full", len: 21, tare: 2700, atm: 3300 },
+  ]},
+  { make: "Roma", models: [
+    { m: "Elegance 19'6", style: "full", len: 19, tare: 2450, atm: 3000 },
+  ]},
+  { make: "Supreme", models: [
+    { m: "Territory 19", style: "off", len: 19, tare: 2600, atm: 3200 },
+  ]},
+  { make: "Millard", models: [
+    { m: "M-Flow 18", style: "full", len: 18, tare: 2100, atm: 2600 },
+  ]},
+  { make: "Viscount", models: [
+    { m: "Grand Tourer 16 (classic)", style: "full", len: 16, tare: 1250, atm: 1600 },
+  ]},
+  { make: "Franklin", models: [
+    { m: "Arrow 15 (classic)", style: "full", len: 15, tare: 1150, atm: 1450 },
+  ]},
+  { make: "Evernew", models: [
+    { m: "E Series 19", style: "full", len: 19, tare: 2300, atm: 2900 },
+  ]},
+  { make: "Golf", models: [
+    { m: "Maxxi 19'6", style: "full", len: 19, tare: 2200, atm: 2750 },
+    { m: "Tourer 16 Pop-Top", style: "pop", len: 16, tare: 1700, atm: 2100 },
+  ]},
+  { make: "Olympic", models: [
+    { m: "Javelin 19", style: "full", len: 19, tare: 2350, atm: 2900 },
+  ]},
+  { make: "Concept", models: [
+    { m: "Ascot 18", style: "full", len: 18, tare: 2150, atm: 2650 },
+  ]},
+  { make: "Royal Flair", models: [
+    { m: "Razor 18'6", style: "off", len: 18, tare: 2500, atm: 3200 },
+    { m: "Van Royce 20", style: "full", len: 20, tare: 2500, atm: 3100 },
+  ]},
+  { make: "Paramount", models: [
+    { m: "Duet 19", style: "full", len: 19, tare: 2400, atm: 3000 },
+  ]},
+  { make: "Legend", models: [
+    { m: "Trackline 19", style: "off", len: 19, tare: 2700, atm: 3400 },
+  ]},
+  { make: "Snowy River", models: [
+    { m: "SRC-18", style: "full", len: 18, tare: 2150, atm: 2700 },
+    { m: "SRC-21", style: "full", len: 21, tare: 2450, atm: 3050 },
+    { m: "SRT-15 Off-Road", style: "off", len: 15, tare: 2050, atm: 2600 },
+  ]},
+  { make: "Regal", models: [
+    { m: "Comfort Tourer 19", style: "full", len: 19, tare: 2400, atm: 2950 },
+  ]},
+  { make: "JB Caravans", models: [
+    { m: "Gator 19'6", style: "off", len: 19, tare: 2750, atm: 3500 },
+    { m: "Scorpion 16", style: "off", len: 16, tare: 2400, atm: 3000 },
+  ]},
+  { make: "Nova", models: [
+    { m: "Bravo 18'8", style: "full", len: 18, tare: 2350, atm: 2900 },
+    { m: "Metrovan 16", style: "full", len: 16, tare: 2050, atm: 2500 },
+  ]},
+  { make: "Urban", models: [
+    { m: "Compass 19", style: "off", len: 19, tare: 2800, atm: 3500 },
+  ]},
+  { make: "On The Move", models: [
+    { m: "Grenade 20", style: "off", len: 20, tare: 2900, atm: 3500 },
+  ]},
+  { make: "Sunland", models: [
+    { m: "Patriot 19", style: "off", len: 19, tare: 2800, atm: 3500 },
+  ]},
+  { make: "Bushtracker", models: [
+    { m: "18' Custom Off-Road", style: "off", len: 18, tare: 3100, atm: 3990 },
+  ]},
+  { make: "Kedron", models: [
+    { m: "Cross Country 19", style: "off", len: 19, tare: 3100, atm: 3990 },
+  ]},
+  { make: "Trakmaster", models: [
+    { m: "Pilbara 17", style: "off", len: 17, tare: 2600, atm: 3300 },
+  ]},
+  { make: "Adria", models: [
+    { m: "Altea 552 (Euro light)", style: "full", len: 18, tare: 1450, atm: 1800 },
+    { m: "Adora 613", style: "full", len: 20, tare: 1750, atm: 2000 },
+  ]},
+  { make: "Bailey", models: [
+    { m: "Phoenix+ 644 (UK light)", style: "full", len: 21, tare: 1500, atm: 2000 },
+  ]},
+  { make: "Patriot Campers", models: [
+    { m: "X1", style: "camper", len: 13, tare: 1450, atm: 2000 },
+    { m: "X3", style: "camper", len: 12, tare: 1050, atm: 1500 },
+  ]},
+  { make: "Track Trailer", models: [
+    { m: "Tvan Canning", style: "camper", len: 13, tare: 1080, atm: 1450 },
+  ]},
+  { make: "Ezytrail", models: [
+    { m: "Parkes 13 Hybrid", style: "off", len: 13, tare: 1750, atm: 2250 },
+  ]},
+  { make: "Austrack", models: [
+    { m: "Telegraph X Hybrid", style: "off", len: 15, tare: 1900, atm: 2500 },
+  ]},
 ];
+/* A→Z menu order for the caravan pickers; physical indexes untouched so saved trips stay valid */
+const VAN_MAKE_ORDER = VAN_DATA.map((_, i) => i).sort((a, b) => VAN_DATA[a].make.localeCompare(VAN_DATA[b].make));
+const VAN_MODEL_ORDER = VAN_DATA.map((mk) => mk.models.map((_, i) => i).sort((a, b) => mk.models[a].m.localeCompare(mk.models[b].m)));
 
 const STYLE_LABEL = { camper: "camper", pop: "pop-top", full: "full-height", off: "off-road full-height" };
 
@@ -978,6 +1318,126 @@ function findPath(from, to) {
   return ids;
 }
 
+/* ============ Community layer: kinds, handles, ages ============ */
+
+const REPORT_KINDS = [
+  ["closed", "🚧 Road closed"],
+  ["water", "🌊 Water over road"],
+  ["works", "🚜 Roadworks"],
+  ["fuel", "⛽ Fuel price alert"],
+  ["clear", "✅ All clear"],
+];
+const REPORT_LABEL = Object.fromEntries(REPORT_KINDS);
+
+const HANDLE_A = ["Sandy", "Dusty", "Salty", "Sunny", "Rusty", "Windy", "Lucky", "Rocky", "Misty", "Bluey"];
+const HANDLE_B = ["Wombat", "Galah", "Dingo", "Quokka", "Emu", "Roo", "Brolga", "Barra", "Cocky", "Bilby"];
+const makeHandle = () =>
+  HANDLE_A[Math.floor(Math.random() * HANDLE_A.length)] +
+  HANDLE_B[Math.floor(Math.random() * HANDLE_B.length)] +
+  String(10 + Math.floor(Math.random() * 90));
+
+const daysAgo = (iso) => {
+  const d = Math.floor((Date.now() - new Date(iso + "T00:00:00").getTime()) / 86400000);
+  return d <= 0 ? "today" : d === 1 ? "yesterday" : d + " days ago";
+};
+const isFresh = (iso, days) => {
+  const d = Math.floor((Date.now() - new Date(iso + "T00:00:00").getTime()) / 86400000);
+  return d <= days;
+};
+
+/* ============ My Australia: scratch map + badges ============ */
+
+const corridorIds = (pairs) => {
+  const set = new Set();
+  pairs.forEach(([a, b]) => {
+    const p = findPath(a, b);
+    if (p) p.forEach((id) => set.add(id));
+  });
+  return [...set];
+};
+
+const BADGE_ROUTES = {
+  nullarbor: corridorIds([["ceduna", "norseman"]]),
+  stuart: corridorIds([["ptaugusta", "darwin"]]),
+  east: corridorIds([["sydney", "cairns"]]),
+  west: corridorIds([["broome", "perth"]]),
+  tassie: corridorIds([["devonport", "strahan"], ["strahan", "hobart"], ["hobart", "sthelens"], ["sthelens", "devonport"]]),
+  outbackway: corridorIds([["winton", "laverton"]]),
+  biglap: corridorIds([["adelaide", "melbourne"], ["melbourne", "sydney"], ["sydney", "brisbane"],
+    ["brisbane", "cairns"], ["cairns", "darwin"], ["darwin", "broome"], ["broome", "perth"], ["perth", "adelaide"]]),
+};
+
+const BADGES = [
+  { id: "first", emoji: "🚩", name: "First Tracks", hint: "Mark your first stop visited",
+    test: (vis) => vis.size >= 1 },
+  { id: "ten", emoji: "🏘️", name: "Ten Towns", hint: "Visit 10 stops",
+    test: (vis) => vis.size >= 10 },
+  { id: "fifty", emoji: "🛻", name: "Half Century", hint: "Visit 50 stops",
+    test: (vis) => vis.size >= 50 },
+  { id: "hundred", emoji: "🌏", name: "The Hundred Club", hint: "Visit 100 stops",
+    test: (vis) => vis.size >= 100 },
+  { id: "all", emoji: "🗺️", name: "The Full Map", hint: "Visit every stop on the network",
+    test: (vis) => vis.size >= Object.keys(NODES).length },
+  { id: "nullarbor", emoji: "🐫", name: "Nullarbor Crossed", hint: "Cross from Ceduna to Norseman",
+    test: (vis) => BADGE_ROUTES.nullarbor.every((id) => vis.has(id)) },
+  { id: "stuart", emoji: "🧭", name: "Up the Guts", hint: "Port Augusta to Darwin on the Stuart",
+    test: (vis) => BADGE_ROUTES.stuart.every((id) => vis.has(id)) },
+  { id: "east", emoji: "🏖️", name: "East Coast Classic", hint: "Sydney to Cairns, the long way up",
+    test: (vis) => BADGE_ROUTES.east.every((id) => vis.has(id)) },
+  { id: "west", emoji: "🦈", name: "The Wild West", hint: "Broome to Perth down the coast",
+    test: (vis) => BADGE_ROUTES.west.every((id) => vis.has(id)) },
+  { id: "tassie", emoji: "🍎", name: "Lap of Tassie", hint: "Circumnavigate Tasmania",
+    test: (vis) => BADGE_ROUTES.tassie.every((id) => vis.has(id)) },
+  { id: "outbackway", emoji: "🤠", name: "The Longest Shortcut", hint: "Winton to Laverton on the Outback Way",
+    test: (vis) => BADGE_ROUTES.outbackway.every((id) => vis.has(id)) },
+  { id: "biglap", emoji: "🏆", name: "Big Lap Legend", hint: "The full ring around Australia",
+    test: (vis) => BADGE_ROUTES.biglap.every((id) => vis.has(id)) },
+  { id: "states", emoji: "🎖️", name: "All Eight", hint: "Visit every state & territory",
+    test: (vis) => {
+      const st = new Set();
+      vis.forEach((id) => { if (NODES[id]) st.add(NODES[id].st); });
+      return st.size >= STATE_GROUPS.length;
+    } },
+  { id: "roadhouse", emoji: "⛽", name: "Roadhouse Royalty", hint: "Visit 10 outback roadhouses",
+    test: (vis) => {
+      let n = 0;
+      vis.forEach((id) => { if (NODES[id] && NODES[id].k === "rh") n += 1; });
+      return n >= 10;
+    } },
+  { id: "scribe", emoji: "📝", name: "Trip Scribe", hint: "Write journal notes at 5 stops",
+    test: (vis, jx) => !!jx && jx.notes >= 5 },
+  { id: "snaps", emoji: "📷", name: "Snapshot Collector", hint: "Add 10 photos to your journal",
+    test: (vis, jx) => !!jx && jx.photos >= 10 },
+];
+
+function ScratchSketch({ visited }) {
+  return (
+    <svg viewBox={"0 0 " + SK_W + " " + SK_H} role="img"
+         aria-label="Map of the JourneyPro network showing the stops and highways you have travelled"
+         style={{ width: "100%", height: "auto", display: "block", background: "var(--paper)",
+                  border: "1.5px solid var(--line)", borderRadius: 12 }}>
+      {EDGES.map(([a, b], i) => {
+        const done = visited[a] && visited[b];
+        return (
+          <line key={i} x1={SKETCH_PTS[a][0]} y1={SKETCH_PTS[a][1]}
+                x2={SKETCH_PTS[b][0]} y2={SKETCH_PTS[b][1]}
+                stroke={done ? "var(--sign)" : "#D8D7CC"} strokeWidth={done ? 2.8 : 1.4}
+                strokeDasharray={done ? undefined : "4 4"} strokeLinecap="round" />
+        );
+      })}
+      {Object.keys(SKETCH_PTS).map((id) => {
+        const [x, y] = SKETCH_PTS[id];
+        const v = !!visited[id];
+        return v ? (
+          <circle key={id} cx={x} cy={y} r={4.2} fill="var(--sign)" stroke="#FFFFFF" strokeWidth={1.4} />
+        ) : (
+          <circle key={id} cx={x} cy={y} r={2.2} fill="#CDCCC0" />
+        );
+      })}
+    </svg>
+  );
+}
+
 const TRIPS = [
   { id: "biglap", name: "The Big Lap", lap: true,
     blurb: "The one on every caravanner\u2019s list \u2014 roughly 14,000 km right around the country. Chase the warmth: most rigs do the Top End and the Kimberley in the dry (May\u2013Sep), so pick a direction that lands you up north in winter. Whitsundays, Katherine Gorge, Cable Beach, Ningaloo, the Nullarbor \u2014 all of it, one lap." },
@@ -1228,10 +1688,12 @@ function RouteSketch({ route, waypoints, fills, marks }) {
   );
 }
 
-function RouteMap({ route, waypoints, fills, dayAt, stays, marks }) {
+function RouteMap({ route, waypoints, fills, dayAt, stays, marks, visited, onToggleVisited }) {
   const boxRef = useRef(null);
   const mapRef = useRef(null);
   const overlayRef = useRef(null);
+  const onToggleRef = useRef(onToggleVisited);
+  onToggleRef.current = onToggleVisited;
   const [mapState, setMapState] = useState("loading"); /* loading | live | sketch */
 
   useEffect(() => {
@@ -1248,6 +1710,13 @@ function RouteMap({ route, waypoints, fills, dayAt, stays, marks }) {
         }).addTo(m);
         m.on("click", () => m.scrollWheelZoom.enable());
         overlayRef.current = L.layerGroup().addTo(m);
+        m.getContainer().addEventListener("click", (ev) => {
+          const b = ev.target && ev.target.closest ? ev.target.closest(".jp-popvisit") : null;
+          if (b && onToggleRef.current) {
+            onToggleRef.current(b.getAttribute("data-jpid"));
+            m.closePopup();
+          }
+        });
         mapRef.current = m;
         setMapState("live");
       })
@@ -1354,6 +1823,8 @@ function RouteMap({ route, waypoints, fills, dayAt, stays, marks }) {
         marker = L.circleMarker(COORDS[id], { radius: 6.5, color: "#21262A", weight: 2, fillColor: "#F5B301", fillOpacity: 1 });
       } else if (on) {
         marker = L.circleMarker(COORDS[id], { radius: 5, color: "#FFFFFF", weight: 2, fillColor: "#00674F", fillOpacity: 1 });
+      } else if (visited && visited[id]) {
+        marker = L.circleMarker(COORDS[id], { radius: 4.5, color: "#FFFFFF", weight: 1.5, fillColor: "#00674F", fillOpacity: 0.85 });
       } else {
         marker = L.circleMarker(COORDS[id], { radius: 3.5, color: "#8E948B", weight: 1, fillColor: "#C4C3B6", fillOpacity: 0.9 });
       }
@@ -1364,18 +1835,21 @@ function RouteMap({ route, waypoints, fills, dayAt, stays, marks }) {
       const layN = Math.max(0, Number(stays[id]) || 0);
       if (on && layN > 0) bits.push('<span class="jp-popchip">🌙 ' + layN + (layN === 1 ? " night" : " nights") + "</span>");
       if (!node.f) bits.push('<span class="jp-popchip jp-popred">No fuel</span>');
+      if (visited && visited[id]) bits.push('<span class="jp-popchip jp-popvis">✓ Been here ' + String(visited[id]).slice(0, 4) + "</span>");
 
       marker.bindPopup(
         '<div class="jp-pop"><p class="jp-popname">' + node.n + " <span>· " + node.st + "</span></p>" +
         (bits.length ? '<p class="jp-poprow">' + bits.join(" ") + "</p>" : "") +
-        '<p class="jp-popkind">' + (node.k === "rh" ? "Roadhouse" : node.k === "city" ? "City" : "Town") + " · " + node.g + "</p></div>",
+        '<p class="jp-popkind">' + (node.k === "rh" ? "Roadhouse" : node.k === "city" ? "City" : "Town") + " · " + node.g + "</p>" +
+        '<button type="button" class="jp-popvisit" data-jpid="' + id + '">' +
+        (visited && visited[id] ? "Unmark visited" : "✓ Mark as visited") + "</button></div>",
         { closeButton: false, offset: [0, -4] }
       );
       marker.addTo(ov);
     });
 
     fitTrip();
-  }, [mapState, route, waypoints, fills, dayAt, stays, marks]);
+  }, [mapState, route, waypoints, fills, dayAt, stays, marks, visited]);
 
   return (
     <div className="jp-card p-5">
@@ -1696,6 +2170,19 @@ export default function JourneyPro() {
   const [tripMarks, setTripMarks] = useState(null);
   const [travel, setTravel] = useState(null); /* { active, startedISO, pos, wp, stays, marks } */
   const [travelView, setTravelView] = useState(null); /* stop index being browsed; null = follow the trip */
+  const [visited, setVisited] = useState({}); /* id -> ISO date first visited */
+  const [journal, setJournal] = useState({}); /* id -> { rating, note, photos[], updated } */
+  const [journalLoaded, setJournalLoaded] = useState(false);
+  const [journalWarn, setJournalWarn] = useState(false);
+  const [photoView, setPhotoView] = useState(null);
+  const [draftNote, setDraftNote] = useState("");
+  const [community, setCommunity] = useState({}); /* id -> { loading, reviews, reports, at } */
+  const [communityDown, setCommunityDown] = useState(false);
+  const [handle, setHandle] = useState("");
+  const [repKind, setRepKind] = useState(null);
+  const [repText, setRepText] = useState("");
+  const [repBusy, setRepBusy] = useState(false);
+  const [livePrices, setLivePrices] = useState({}); /* id -> { loading, min, avg, n, src, at } */
 
   const make = VEHICLE_DATA[makeIdx];
   const model = make.models[Math.min(modelIdx, make.models.length - 1)];
@@ -2104,6 +2591,266 @@ export default function JourneyPro() {
     a.href = story; a.download = fname; a.click();
   };
 
+  const persistVisited = async (obj) => {
+    if (typeof window === "undefined" || !window.storage) return;
+    try { await window.storage.set("visited:v1", JSON.stringify(obj)); } catch (e) { /* best effort */ }
+  };
+  const markVisited = (ids) => {
+    setVisited((prev) => {
+      const nx = { ...prev };
+      let changed = false;
+      ids.forEach((id) => {
+        if (id && NODES[id] && !nx[id]) { nx[id] = new Date().toISOString().slice(0, 10); changed = true; }
+      });
+      if (changed) persistVisited(nx);
+      return changed ? nx : prev;
+    });
+  };
+  const toggleVisited = (id) => {
+    if (!NODES[id]) return;
+    setVisited((prev) => {
+      const nx = { ...prev };
+      if (nx[id]) delete nx[id];
+      else nx[id] = new Date().toISOString().slice(0, 10);
+      persistVisited(nx);
+      return nx;
+    });
+  };
+
+  useEffect(() => {
+    /* Load the scratch map */
+    if (typeof window === "undefined" || !window.storage) return;
+    (async () => {
+      try {
+        const res = await window.storage.get("visited:v1");
+        if (res && res.value) {
+          const v = JSON.parse(res.value);
+          if (v && typeof v === "object") setVisited(v);
+        }
+      } catch (e) { /* nothing marked yet */ }
+    })();
+  }, []);
+
+  const LIVE_FUEL_STATES = ["WA", "NSW", "TAS"];
+  const loadFuel = (id) => {
+    if (!id || !NODES[id] || typeof fetch === "undefined") return;
+    if (!LIVE_FUEL_STATES.includes(NODES[id].st)) return;
+    const cur = livePrices[id];
+    if (cur && (cur.loading || (cur.at && Date.now() - cur.at < 1800000))) return;
+    const town = NODES[id].n.replace(/\s*\(.*\)$/, "");
+    setLivePrices((p) => ({ ...p, [id]: { ...(p[id] || {}), loading: true } }));
+    fetch("/api/fuel?state=" + NODES[id].st + "&town=" + encodeURIComponent(town) + "&fuel=" + vehicle.fuel)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d) => {
+        setLivePrices((p) => ({
+          ...p,
+          [id]: d && d.ok
+            ? { loading: false, at: Date.now(), min: d.min, avg: d.avg, n: d.n, src: d.src, fuel: d.fuel }
+            : { loading: false, at: Date.now(), none: true },
+        }));
+      })
+      .catch(() => {
+        setLivePrices((p) => ({ ...p, [id]: { loading: false, at: Date.now(), none: true } }));
+      });
+  };
+
+  const loadCommunity = (id) => {
+    if (!id || !NODES[id] || typeof fetch === "undefined") return;
+    const cur = community[id];
+    if (cur && (cur.loading || (cur.at && Date.now() - cur.at < 60000))) return;
+    setCommunity((p) => ({ ...p, [id]: { ...(p[id] || {}), loading: true } }));
+    fetch("/api/community?stop=" + encodeURIComponent(id))
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((data) => {
+        setCommunityDown(false);
+        setCommunity((p) => ({
+          ...p,
+          [id]: {
+            loading: false,
+            at: Date.now(),
+            reviews: (data && data.reviews) || [],
+            reports: (data && data.reports) || [],
+          },
+        }));
+      })
+      .catch(() => {
+        setCommunityDown(true);
+        setCommunity((p) => ({ ...p, [id]: { loading: false, at: Date.now(), reviews: [], reports: [] } }));
+      });
+  };
+
+  const ensureHandle = () => {
+    if (handle) return handle;
+    const h = makeHandle();
+    setHandle(h);
+    if (typeof window !== "undefined" && window.storage) {
+      try { window.storage.set("handle:v1", h); } catch (e) { /* fine */ }
+    }
+    return h;
+  };
+
+  const postCommunity = async (payload) => {
+    const res = await fetch("/api/community", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(String(res.status));
+    return res.json();
+  };
+
+  const shareEntry = async (id) => {
+    const e = journal[id];
+    if (!e || (!e.rating && !e.note)) return;
+    const h = ensureHandle();
+    try {
+      await postCommunity({ stop: id, type: "review", handle: h, rating: e.rating || 0, text: e.note || "" });
+      updateJournal(id, { sharedAt: new Date().toISOString().slice(0, 10) });
+      setCommunity((p) => {
+        const c = p[id] || { reviews: [], reports: [] };
+        return {
+          ...p,
+          [id]: {
+            ...c,
+            reviews: [{ h, r: e.rating, t: e.note, d: new Date().toISOString().slice(0, 10) }, ...(c.reviews || [])],
+          },
+        };
+      });
+    } catch (err) {
+      setCommunityDown(true);
+    }
+  };
+
+  const sendReport = async (id) => {
+    if (!repKind || repBusy) return;
+    setRepBusy(true);
+    const h = ensureHandle();
+    try {
+      await postCommunity({ stop: id, type: "report", handle: h, kind: repKind, text: repText });
+      setCommunity((p) => {
+        const c = p[id] || { reviews: [], reports: [] };
+        return {
+          ...p,
+          [id]: {
+            ...c,
+            reports: [{ h, k: repKind, t: repText.trim() || undefined, d: new Date().toISOString().slice(0, 10) }, ...(c.reports || [])],
+          },
+        };
+      });
+      setRepKind(null); setRepText("");
+    } catch (err) {
+      setCommunityDown(true);
+    } finally {
+      setRepBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    /* Load the saved road name */
+    if (typeof window === "undefined" || !window.storage) return;
+    (async () => {
+      try {
+        const res = await window.storage.get("handle:v1");
+        if (res && res.value) setHandle(String(res.value).slice(0, 24));
+      } catch (e) { /* none yet */ }
+    })();
+  }, []);
+
+  useEffect(() => {
+    /* Fetch community when a guide opens */
+    const gid = openIdx != null ? route.stops[openIdx] : null;
+    if (gid) { loadCommunity(gid); loadFuel(gid); }
+  }, [openIdx]);
+
+  useEffect(() => {
+    /* Fetch community for the stop Travel Mode is looking at */
+    if (!travel || route.segs.length === 0) return;
+    const stopsL = route.stops;
+    const tp = Math.min(travel.pos, stopsL.length);
+    const vI = travelView == null
+      ? Math.min(tp, stopsL.length - 1)
+      : Math.max(0, Math.min(stopsL.length - 1, travelView));
+    loadCommunity(stopsL[vI]); loadFuel(stopsL[vI]);
+  }, [travel, travelView, waypoints]); /* route derives from waypoints; naming route here would hit its TDZ */
+
+  const persistJournal = async (obj) => {
+    if (typeof window === "undefined" || !window.storage) return true;
+    try { await window.storage.set("journal:v1", JSON.stringify(obj)); return true; }
+    catch (e) { return false; }
+  };
+  const updateJournal = (id, patch) => {
+    if (!NODES[id]) return;
+    const cur = journal[id] || {};
+    const entry = { ...cur, ...patch, updated: new Date().toISOString().slice(0, 10) };
+    if (!entry.rating) delete entry.rating;
+    if (!(entry.note && entry.note.trim())) delete entry.note; else entry.note = entry.note.trim();
+    if (!(entry.photos && entry.photos.length)) delete entry.photos;
+    const nx = { ...journal };
+    const has = entry.rating || entry.note || (entry.photos && entry.photos.length);
+    if (has) { nx[id] = entry; markVisited([id]); } else delete nx[id];
+    setJournal(nx);
+  };
+  const setRating = (id, s) => updateJournal(id, { rating: s });
+  const saveNote = (id) => updateJournal(id, { note: draftNote });
+  const removePhoto = (id, pi) => {
+    const cur = (journal[id] && journal[id].photos) || [];
+    updateJournal(id, { photos: cur.filter((_, k) => k !== pi) });
+  };
+  const shrinkPhoto = (file) => new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAXP = 900;
+      const s = Math.min(1, MAXP / Math.max(img.width, img.height));
+      const cw = Math.max(1, Math.round(img.width * s)), ch = Math.max(1, Math.round(img.height * s));
+      const cv = document.createElement("canvas");
+      cv.width = cw; cv.height = ch;
+      cv.getContext("2d").drawImage(img, 0, 0, cw, ch);
+      URL.revokeObjectURL(url);
+      resolve(cv.toDataURL("image/jpeg", 0.72));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("bad image")); };
+    img.src = url;
+  });
+  const addPhotos = async (id, files, inputEl) => {
+    try {
+      const cur = (journal[id] && journal[id].photos) || [];
+      const slots = Math.max(0, 3 - cur.length);
+      const picked = Array.from(files || []).slice(0, slots);
+      if (!picked.length) return;
+      const shrunk = [];
+      for (const f of picked) {
+        try { shrunk.push(await shrinkPhoto(f)); } catch (e) { /* skip bad file */ }
+      }
+      if (shrunk.length) updateJournal(id, { photos: [...cur, ...shrunk] });
+    } finally {
+      if (inputEl) inputEl.value = "";
+    }
+  };
+
+  useEffect(() => {
+    /* Load the journal */
+    if (typeof window === "undefined" || !window.storage) { setJournalLoaded(true); return; }
+    (async () => {
+      try {
+        const res = await window.storage.get("journal:v1");
+        if (res && res.value) {
+          const j = JSON.parse(res.value);
+          if (j && typeof j === "object") setJournal(j);
+        }
+      } catch (e) { /* fresh journal */ }
+      setJournalLoaded(true);
+    })();
+  }, []);
+  useEffect(() => {
+    if (!journalLoaded) return;
+    persistJournal(journal).then((ok) => setJournalWarn(!ok));
+  }, [journal, journalLoaded]);
+  useEffect(() => {
+    const jid = openIdx != null ? route.stops[openIdx] : null;
+    setDraftNote(jid && journal[jid] && journal[jid].note ? journal[jid].note : "");
+  }, [openIdx]);
+
   const persistTravel = async (t) => {
     if (typeof window === "undefined" || !window.storage) return;
     try {
@@ -2141,9 +2888,11 @@ export default function JourneyPro() {
       marks: tripMarks,
     };
     setTravel(t); persistTravel(t); setTravelView(null);
+    markVisited([route.stops[0]]);
   };
   const travelStep = (dir) => {
     if (!travel) return;
+    if (dir > 0 && route.stops[travel.pos]) markVisited([route.stops[travel.pos]]);
     const pos = Math.max(1, Math.min(route.stops.length, travel.pos + dir));
     const t = { ...travel, pos };
     setTravel(t); persistTravel(t); setTravelView(null);
@@ -2361,10 +3110,24 @@ export default function JourneyPro() {
               {!NODES[vId].f && (
                 <span className="jp-chip" style={{ color: "var(--red)", borderColor: "var(--red)" }}>No fuel here</span>
               )}
+              {(() => {
+                const cm = community[vId];
+                const n = ((cm && cm.reports) || []).filter((r) => r.d && isFresh(r.d, 14)).length;
+                return n > 0 ? (
+                  <button type="button" className="jp-chip jp-chipbtn"
+                          style={{ color: "var(--red)", borderColor: "var(--red)", fontWeight: 700 }}
+                          onClick={scrollToGuide}>
+                    ⚠️ {n} road report{n === 1 ? "" : "s"}
+                  </button>
+                ) : null;
+              })()}
             </p>
             <p className="jp-note mb-2">
               {fillHere ? (
-                <>⛽ Fill-up here — ~{Math.round(fillHere.litres)} L{fillHere.cost ? " (~$" + Math.round(fillHere.cost) + ")" : ""}.</>
+                <>⛽ Fill-up here — ~{Math.round(fillHere.litres)} L{fillHere.cost ? " (~$" + Math.round(fillHere.cost) + ")" : ""}.
+                {livePrices[vId] && livePrices[vId].n > 0 ? (
+                  <> <strong>Live today: from ${(livePrices[vId].min / 100).toFixed(2)}</strong> ({livePrices[vId].src}).</>
+                ) : null}</>
               ) : nextFill ? (
                 <>⛽ Next fill-up after here: <strong>{NODES[stops[fillIdx]].n}</strong> — {fmt(fillKm)} km on,
                 {" "}~{Math.round(nextFill.litres)} L{nextFill.cost ? " (~$" + Math.round(nextFill.cost) + ")" : ""}.</>
@@ -2389,6 +3152,7 @@ export default function JourneyPro() {
               <button type="button" className="jp-load" onClick={() => setTravelView(null)}>◀ Back to today</button>
               <button type="button" className="jp-preset"
                       onClick={() => {
+                        markVisited([stops[v]]);
                         const t = { ...travel, pos: Math.min(stops.length, v + 1) };
                         setTravel(t); persistTravel(t); setTravelView(null);
                       }}>✓ I&rsquo;m here now</button>
@@ -2584,6 +3348,31 @@ export default function JourneyPro() {
         .jp-scrub { width: 100%; accent-color: var(--sign); height: 28px; margin: 0.1rem 0 0.25rem;
           cursor: pointer; }
         .jp-scrub:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; border-radius: 8px; }
+        .jp-popvis { background: var(--sign); color: #fff; border-color: var(--sign); }
+        .jp-popvisit { display: block; margin-top: 0.45rem; width: 100%; background: var(--sign);
+          color: #fff; border: 0; border-radius: 8px; padding: 0.4rem 0.6rem;
+          font: 600 0.78rem 'Archivo', system-ui, sans-serif; cursor: pointer; }
+        .jp-journal { border-top: 1.5px dashed var(--line); padding-top: 0.6rem; }
+        .jp-star { background: none; border: 0; font-size: 1.35rem; line-height: 1;
+          color: var(--amber); cursor: pointer; padding: 0.1rem; }
+        .jp-star:focus-visible { outline: 3px solid var(--amber); border-radius: 6px; }
+        .jp-notearea { resize: vertical; min-height: 4.2rem; font-size: 0.85rem; width: 100%; }
+        .jp-thumbwrap { position: relative; display: inline-block; }
+        .jp-thumb { padding: 0; border: 1.5px solid var(--line); border-radius: 10px; overflow: hidden;
+          width: 72px; height: 72px; cursor: zoom-in; background: #fff; }
+        .jp-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .jp-thumbx { position: absolute; top: -7px; right: -7px; width: 22px; height: 22px;
+          border-radius: 999px; background: var(--ink); color: #fff; border: 2px solid #fff;
+          font-size: 0.8rem; line-height: 1; cursor: pointer; }
+        .jp-thumbx:focus-visible, .jp-thumb:focus-visible { outline: 3px solid var(--amber); }
+        .jp-community { border-top: 1.5px dashed var(--line); padding-top: 0.6rem; }
+        .jp-report { margin: 0 0 0.3rem; font-size: 0.85rem; color: var(--red); }
+        .jp-travnote { margin: 0 0 0.35rem; font-size: 0.85rem; }
+        .jp-repmeta { color: var(--muted); font-size: 0.75rem; }
+        .jp-handle { display: inline-block; width: 9.5rem; padding: 0.15rem 0.45rem; font-size: 0.78rem; }
+        .jp-chipbtn { cursor: pointer; background: var(--paper); }
+        .jp-livefuel { background: #EAF3EF; border: 1.5px solid var(--sign); border-radius: 10px;
+          padding: 0.4rem 0.6rem; font-size: 0.85rem; margin: 0.35rem 0; }
       `}</style>
 
       <header className="max-w-6xl mx-auto px-4 pt-8 pb-2">
@@ -2601,7 +3390,7 @@ export default function JourneyPro() {
           </div>
           <span className="jp-display text-sm font-semibold tracking-widest uppercase px-3 py-1 rounded-md"
                 style={{ background: "var(--amber)", color: "var(--ink)" }}>
-            Prototype v0.17
+            Prototype v0.24
           </span>
         </div>
       </header>
@@ -2628,14 +3417,14 @@ export default function JourneyPro() {
               <div>
                 <label className="block text-sm font-semibold mb-1" htmlFor="mk">Make</label>
                 <select id="mk" className="jp-field" value={makeIdx} onChange={(e) => changeMake(Number(e.target.value))}>
-                  {VEHICLE_DATA.map((m, i) => <option key={m.make} value={i}>{m.make}</option>)}
+                  {MAKE_ORDER.map((i) => <option key={VEHICLE_DATA[i].make} value={i}>{VEHICLE_DATA[i].make}</option>)}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1" htmlFor="md">Model</label>
                 <select id="md" className="jp-field" value={Math.min(modelIdx, make.models.length - 1)}
                         onChange={(e) => changeModel(Number(e.target.value))}>
-                  {make.models.map((m, i) => <option key={m.model} value={i}>{m.model}</option>)}
+                  {MODEL_ORDER[makeIdx].map((i) => <option key={make.models[i].model} value={i}>{make.models[i].model}</option>)}
                 </select>
               </div>
             </div>
@@ -2753,14 +3542,14 @@ export default function JourneyPro() {
                     <label className="block text-sm font-semibold mb-1" htmlFor="vmk">Make</label>
                     <select id="vmk" className="jp-field" value={vanMakeIdx}
                             onChange={(e) => { setVanMakeIdx(Number(e.target.value)); setVanModelIdx(0); }}>
-                      {VAN_DATA.map((m, i) => <option key={m.make} value={i}>{m.make}</option>)}
+                      {VAN_MAKE_ORDER.map((i) => <option key={VAN_DATA[i].make} value={i}>{VAN_DATA[i].make}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold mb-1" htmlFor="vmd">Model</label>
                     <select id="vmd" className="jp-field" value={Math.min(vanModelIdx, vanMake.models.length - 1)}
                             onChange={(e) => setVanModelIdx(Number(e.target.value))}>
-                      {vanMake.models.map((m, i) => <option key={m.m} value={i}>{m.m}</option>)}
+                      {VAN_MODEL_ORDER[vanMakeIdx].map((i) => <option key={vanMake.models[i].m} value={i}>{vanMake.models[i].m}</option>)}
                     </select>
                   </div>
                 </div>
@@ -2972,6 +3761,18 @@ export default function JourneyPro() {
             </div>
           )}
 
+          {photoView && (
+            <div className="jp-modal" role="dialog" aria-modal="true" aria-label="Journal photo"
+                 onClick={(e) => { if (e.target === e.currentTarget) setPhotoView(null); }}>
+              <div className="jp-modalcard jp-card p-3">
+                <img className="jp-modalimg" src={photoView} alt="Journal photo" />
+                <div className="flex gap-2 mt-3">
+                  <button type="button" className="jp-preset" onClick={() => setPhotoView(null)}>Close</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="jp-sign p-6 md:p-8">
             <p className="jp-display uppercase tracking-widest text-sm font-semibold"
                style={{ color: "rgba(255,255,255,0.75)" }}>
@@ -3079,7 +3880,8 @@ export default function JourneyPro() {
           </div>
 
           <RouteMap route={route} waypoints={waypoints} fills={plan.fills}
-                    dayAt={plan.dayAt} stays={stays} marks={tripMarks} />
+                    dayAt={plan.dayAt} stays={stays} marks={tripMarks}
+                    visited={visited} onToggleVisited={toggleVisited} />
 
           {route.segs.length > 0 && (
             <div className="jp-card p-5">
@@ -3151,6 +3953,12 @@ export default function JourneyPro() {
                         {tripMarks && tripMarks.end === id && tripMarks.end !== tripMarks.start && i === route.stops.lastIndexOf(tripMarks.end) && (
                           <span className="jp-tag" style={{ color: "var(--red)", borderColor: "var(--red)" }}>Route end</span>
                         )}
+                        {journal[id] && journal[id].rating ? (
+                          <span className="jp-tag" style={{ background: "var(--amber)", borderColor: "var(--ink)",
+                                color: "var(--ink)", fontWeight: 700 }}>★ {journal[id].rating}</span>
+                        ) : journal[id] ? (
+                          <span className="jp-tag">📝</span>
+                        ) : null}
                       </span>
                       <span className="flex items-center gap-2 flex-none">
                         {(stays[id] || 0) > 0 && (
@@ -3189,7 +3997,19 @@ export default function JourneyPro() {
                           </p>
                         )}
                         <p><strong>See &amp; do:</strong> {node.see}</p>
-                        <p><strong>Stay:</strong> {node.stay}</p>
+                        {livePrices[id] && livePrices[id].n > 0 && (
+                          <p className="jp-livefuel">
+                            ⛽ <strong>Live {FUEL_META[vehicle.fuel].label.toLowerCase()}:</strong>
+                            {" "}from ${(livePrices[id].min / 100).toFixed(2)} · avg ${(livePrices[id].avg / 100).toFixed(2)}
+                            {" "}<span className="jp-repmeta">({livePrices[id].n} station{livePrices[id].n === 1 ? "" : "s"} today · {livePrices[id].src})</span>
+                          </p>
+                        )}
+                        <p><strong>Stay:</strong> {node.stay}{" "}
+                          <a href={"https://www.google.com/search?q=" + encodeURIComponent(node.stay + " " + node.n + " " + node.st)}
+                             target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1">
+                            find this park <ExternalLink size={12} aria-hidden />
+                          </a>
+                        </p>
                         <p className="flex flex-wrap items-center gap-2">
                           <span><strong>Nights here:</strong></span>
                           <input type="number" min="0" max="30" step="1" className="jp-field jp-mono"
@@ -3204,6 +4024,149 @@ export default function JourneyPro() {
                             Map, photos &amp; reviews <ExternalLink size={13} aria-hidden />
                           </a>
                         </p>
+                        <p className="mt-2">
+                          <button type="button" className="jp-preset" data-on={!!visited[id]}
+                                  onClick={() => toggleVisited(id)}>
+                            {visited[id] ? "✓ Been here " + String(visited[id]).slice(0, 4) : "Mark as visited"}
+                          </button>
+                        </p>
+                        <div className="jp-journal mt-2">
+                          <p className="jp-eyebrow mb-1" style={{ fontSize: "0.68rem" }}>My journal</p>
+                          <div className="flex items-center gap-1 mb-2" role="group"
+                               aria-label={"Your rating for " + node.n}>
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <button key={s} type="button" className="jp-star"
+                                      aria-label={s + (s === 1 ? " star" : " stars")}
+                                      aria-pressed={((journal[id] && journal[id].rating) || 0) >= s}
+                                      onClick={() => setRating(id, s)}>
+                                {((journal[id] && journal[id].rating) || 0) >= s ? "★" : "☆"}
+                              </button>
+                            ))}
+                            {journal[id] && journal[id].rating ? (
+                              <button type="button" className="jp-preset" style={{ marginLeft: "0.4rem" }}
+                                      onClick={() => setRating(id, 0)}>clear</button>
+                            ) : null}
+                          </div>
+                          <textarea className="jp-field jp-notearea" rows={3}
+                                    placeholder={"Your notes on " + node.n + " — the good sites, the tips, the truth…"}
+                                    value={draftNote}
+                                    onChange={(e) => setDraftNote(e.target.value)}
+                                    onBlur={() => saveNote(id)} />
+                          <div className="flex flex-wrap items-center gap-2 mt-2">
+                            {((journal[id] && journal[id].photos) || []).map((p, pi) => (
+                              <span key={pi} className="jp-thumbwrap">
+                                <button type="button" className="jp-thumb" onClick={() => setPhotoView(p)}
+                                        aria-label={"View photo " + (pi + 1) + " of " + node.n}>
+                                  <img src={p} alt="" />
+                                </button>
+                                <button type="button" className="jp-thumbx" aria-label="Remove photo"
+                                        onClick={() => removePhoto(id, pi)}>×</button>
+                              </span>
+                            ))}
+                            {((journal[id] && journal[id].photos) || []).length < 3 && (
+                              <label className="jp-preset" style={{ cursor: "pointer" }}>
+                                📷 Add photo
+                                <input type="file" accept="image/*" multiple hidden
+                                       onChange={(e) => addPhotos(id, e.target.files, e.target)} />
+                              </label>
+                            )}
+                          </div>
+                          {(journal[id] && (journal[id].rating || journal[id].note)) ? (
+                            <p className="mt-2">
+                              {journal[id].sharedAt ? (
+                                <span className="jp-chip">✓ Shared with travellers</span>
+                              ) : (
+                                <button type="button" className="jp-preset" onClick={() => shareEntry(id)}>
+                                  📣 Share this with other travellers
+                                </button>
+                              )}
+                            </p>
+                          ) : null}
+                          <p className="jp-note mt-1">Photos are shrunk to travel size and stay on this phone.</p>
+                          {journalWarn && (
+                            <p className="jp-note mt-1" style={{ color: "var(--red)", fontWeight: 600 }}>
+                              Photo storage is full — remove a photo or two and it&rsquo;ll save again.
+                            </p>
+                          )}
+                        </div>
+                        <div className="jp-community mt-2">
+                          <p className="jp-eyebrow mb-1" style={{ fontSize: "0.68rem" }}>Travellers say</p>
+                          {(() => {
+                            const c = community[id];
+                            const freshReports = ((c && c.reports) || []).filter((r) => r.d && isFresh(r.d, 14));
+                            const notes = ((c && c.reviews) || []).slice(0, 5);
+                            return (
+                              <>
+                                {freshReports.length > 0 && (
+                                  <div className="mb-2">
+                                    {freshReports.slice(0, 4).map((r, ri) => (
+                                      <p key={ri} className="jp-report">
+                                        <strong>{REPORT_LABEL[r.k] || "Report"}</strong>
+                                        {r.t ? <> — {r.t}</> : null}
+                                        <span className="jp-repmeta"> · {r.h || "Traveller"} · {daysAgo(r.d)}</span>
+                                      </p>
+                                    ))}
+                                  </div>
+                                )}
+                                {c && c.loading ? (
+                                  <p className="jp-note">Checking the bush telegraph…</p>
+                                ) : communityDown && notes.length === 0 && freshReports.length === 0 ? (
+                                  <p className="jp-note">Traveller notes and road reports will appear here once the
+                                    community service is switched on.</p>
+                                ) : notes.length === 0 && freshReports.length === 0 ? (
+                                  <p className="jp-note">No traveller notes here yet — yours could be the first.</p>
+                                ) : (
+                                  notes.map((n, ni) => (
+                                    <p key={ni} className="jp-travnote">
+                                      <strong>{n.h || "Traveller"}</strong>
+                                      {n.r ? <span style={{ color: "var(--amber)" }}> {"★".repeat(Math.min(5, n.r))}</span> : null}
+                                      {n.t ? <> — {n.t}</> : null}
+                                      <span className="jp-repmeta"> · {n.d ? daysAgo(n.d) : ""}</span>
+                                    </p>
+                                  ))
+                                )}
+                                <div className="mt-2">
+                                  <p className="jp-note mb-1">Spotted something on the road in or out?</p>
+                                  <div className="flex flex-wrap gap-2 mb-2" role="group" aria-label="Report kind">
+                                    {REPORT_KINDS.map(([k, lbl]) => (
+                                      <button key={k} type="button" className="jp-preset" data-on={repKind === k}
+                                              onClick={() => setRepKind(repKind === k ? null : k)}>
+                                        {lbl}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  {repKind && (
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <input type="text" className="jp-field" maxLength={120}
+                                             style={{ flex: "1 1 12rem" }}
+                                             placeholder="Optional detail — e.g. 'just past the roadhouse'"
+                                             value={repText}
+                                             onChange={(e) => setRepText(e.target.value)} />
+                                      <button type="button" className="jp-load" disabled={repBusy}
+                                              onClick={() => sendReport(id)}>
+                                        {repBusy ? "Sending…" : "Send report"}
+                                      </button>
+                                    </div>
+                                  )}
+                                  <p className="jp-note mt-1">
+                                    Posting as <strong>{handle || "a new road name"}</strong>
+                                    {" "}·{" "}
+                                    <input type="text" className="jp-field jp-handle" maxLength={20}
+                                           aria-label="Your road name"
+                                           placeholder="pick a road name"
+                                           value={handle}
+                                           onChange={(e) => setHandle(e.target.value.replace(/[<>]/g, ""))}
+                                           onBlur={() => {
+                                             if (typeof window !== "undefined" && window.storage) {
+                                               try { window.storage.set("handle:v1", handle || ensureHandle()); } catch (e) { /* fine */ }
+                                             }
+                                           }} />
+                                  </p>
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
                       </div>
                     )}
 
@@ -3258,9 +4221,65 @@ export default function JourneyPro() {
 
           <p className="jp-note flex items-center gap-2 px-1">
             <Fuel size={14} aria-hidden />
-            Dataset: 16 vehicle makes, 10 caravan brands, 8 trailer sizes,
+            Dataset: {VEHICLE_DATA.length} vehicle makes ({VEHICLE_VARIANT_COUNT} rigs), {VAN_DATA.length} caravan &amp; camper brands, 8 trailer sizes,
             {" "}{Object.keys(NODES).length} stop guides. Live weather by Open-Meteo · map &copy; OpenStreetMap. Missing yours? Tell us and it goes in.
           </p>
+
+          <div className="jp-card p-5">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="jp-eyebrow">🗺️ My Australia</span>
+              <span className="jp-chip jp-mono">
+                {Object.keys(visited).filter((id) => NODES[id]).length} / {Object.keys(NODES).length}
+              </span>
+            </div>
+            <ScratchSketch visited={visited} />
+            {(() => {
+              const visIds = Object.keys(visited).filter((id) => NODES[id]);
+              const visSet = new Set(visIds);
+              const pctV = Math.round((visIds.length / Object.keys(NODES).length) * 100);
+              const stN = new Set(visIds.map((id) => NODES[id].st)).size;
+              const jIds = Object.keys(journal).filter((id) => NODES[id]);
+              const jx = {
+                entries: jIds.length,
+                notes: jIds.filter((id) => journal[id].note).length,
+                photos: jIds.reduce((a, id) => a + ((journal[id].photos || []).length), 0),
+              };
+              const earned = BADGES.filter((b) => b.test(visSet, jx));
+              const locked = BADGES.filter((b) => !b.test(visSet, jx));
+              return (
+                <>
+                  <div className="jp-tprog mt-3 mb-1" role="progressbar" aria-valuenow={pctV}
+                       aria-valuemin={0} aria-valuemax={100} aria-label="Share of the network visited">
+                    <div className="jp-tprogfill" style={{ width: pctV + "%" }} />
+                  </div>
+                  <p className="jp-note mb-2">
+                    {visIds.length} of {Object.keys(NODES).length} stops · {stN} of {STATE_GROUPS.length} states
+                    &amp; territories · {pctV}% of the map
+                    {jx.entries > 0 && <> · {jx.entries} journalled · {jx.photos} {jx.photos === 1 ? "photo" : "photos"}</>}
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {earned.map((b) => (
+                      <span key={b.id} className="jp-chip"
+                            style={{ background: "var(--amber)", borderColor: "var(--ink)", fontWeight: 700 }}
+                            title={b.hint}>
+                        {b.emoji} {b.name}
+                      </span>
+                    ))}
+                    {locked.map((b) => (
+                      <span key={b.id} className="jp-chip" style={{ opacity: 0.5 }} title={b.hint}>
+                        🔒 {b.name}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="jp-note">
+                    Stops tick themselves off in Travel Mode — or mark any stop from its map pin
+                    or stop guide. Highways turn green once you&rsquo;ve done both ends.
+                  </p>
+                </>
+              );
+            })()}
+          </div>
+
         </section>
       </main>
     </div>
