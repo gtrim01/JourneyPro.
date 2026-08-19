@@ -24,16 +24,16 @@ if (typeof window !== "undefined" && !window.storage) {
 }
 
 /* ============================================================
-   JourneyPro — Prototype v0.24 (first light: live fuel)
-   · Live fuel prices arrive — Western Australia live TODAY
-     via FuelWatch (no key, prices fixed daily by law), with
-     NSW & Tasmania wired and waiting on a free FuelCheck key
-   · Stop guides show today's real price for YOUR fuel type:
-     "Live diesel: from $1.95 — avg $1.99 (3 stations)"
-   · Travel Mode shows the live price at your fill-up stop
-   · Planning maths stays on the app's estimates; live prices
-     are today's reality check beside them
-   · Plus everything from v0.23
+   JourneyPro — Prototype v0.30 (true offline)
+   · The Nullarbor promise: after one online visit, the whole
+     app — plans, 235 stop guides, Travel Mode, journal,
+     scratch map, and any map tiles you've already seen —
+     works with zero bars
+   · Online behaviour is unchanged: updates still arrive
+     instantly; the cache refreshes quietly behind each visit
+   · A gentle 📡 strip appears when you're offline; live
+     prices, weather and road reports return with reception
+   · Plus everything from v0.29
    Curated prototype dataset — figures are realistic estimates
    ============================================================ */
 
@@ -54,38 +54,38 @@ const FUEL_META = {
 const VEHICLE_DATA = [
   { make: "Toyota", models: [
     { model: "HiLux", variants: [
-      { v: "2.8 Turbo-Diesel 4×4", yr: "2015–now", fuel: "diesel", tank: 80, real: 9.5, tow: 3500 },
-      { v: "2.4 Turbo-Diesel 4×4", yr: "2015–now", fuel: "diesel", tank: 80, real: 9, tow: 3200 },
+      { v: "2.8 Turbo-Diesel 4×4", yr: "2015–now", fuel: "diesel", tank: 80, real: 9.5, tow: 3500, kerb: 2110, gvm: 3050, ball: 350 },
+      { v: "2.4 Turbo-Diesel 4×4", yr: "2015–now", fuel: "diesel", tank: 80, real: 9, tow: 3200, kerb: 2050, gvm: 3000, ball: 350 },
     ]},
     { model: "LandCruiser 300", variants: [
-      { v: "3.3 V6 Turbo-Diesel", yr: "2021–now", fuel: "diesel", tank: 110, real: 11.2, tow: 3500 },
+      { v: "3.3 V6 Turbo-Diesel", yr: "2021–now", fuel: "diesel", tank: 110, real: 11.2, tow: 3500, kerb: 2560, gvm: 3280, ball: 350 },
     ]},
     { model: "LandCruiser 200", variants: [
-      { v: "4.5 V8 Turbo-Diesel", yr: "2007–21", fuel: "diesel", tank: 138, real: 13.5, tow: 3500 },
+      { v: "4.5 V8 Turbo-Diesel", yr: "2007–21", fuel: "diesel", tank: 138, real: 13.5, tow: 3500, kerb: 2740, gvm: 3350, ball: 350 },
     ]},
     { model: "LandCruiser 70 Series", variants: [
-      { v: "4.5 V8 Turbo-Diesel", yr: "2007–now", fuel: "diesel", tank: 130, real: 12.8, tow: 3500 },
-      { v: "2.8 Turbo-Diesel auto", yr: "2023–now", fuel: "diesel", tank: 130, real: 10.5, tow: 3500 },
+      { v: "4.5 V8 Turbo-Diesel", yr: "2007–now", fuel: "diesel", tank: 130, real: 12.8, tow: 3500, kerb: 2270, gvm: 3400, ball: 350 },
+      { v: "2.8 Turbo-Diesel auto", yr: "2023–now", fuel: "diesel", tank: 130, real: 10.5, tow: 3500, kerb: 2325, gvm: 3510, ball: 350 },
     ]},
     { model: "Prado", variants: [
-      { v: "2.8 TD (150, twin tank)", yr: "2015–23", fuel: "diesel", tank: 150, real: 10.2, tow: 3000 },
-      { v: "2.8 TD (250 series)", yr: "2024–now", fuel: "diesel", tank: 110, real: 10, tow: 3500 },
+      { v: "2.8 TD (150, twin tank)", yr: "2015–23", fuel: "diesel", tank: 150, real: 10.2, tow: 3000, kerb: 2455, gvm: 2990, ball: 300 },
+      { v: "2.8 TD (250 series)", yr: "2024–now", fuel: "diesel", tank: 110, real: 10, tow: 3500, kerb: 2520, gvm: 3100, ball: 350 },
     ]},
     { model: "Fortuner", variants: [
-      { v: "2.8 Turbo-Diesel", yr: "2015–now", fuel: "diesel", tank: 80, real: 9.8, tow: 3100 },
+      { v: "2.8 Turbo-Diesel", yr: "2015–now", fuel: "diesel", tank: 80, real: 9.8, tow: 3100, kerb: 2185, gvm: 2800, ball: 300 },
     ]},
     { model: "Kluger", variants: [
-      { v: "2.4 Turbo petrol", yr: "2021–now", fuel: "u91", tank: 68, real: 10.8, tow: 2000 },
-      { v: "2.5 Hybrid AWD", yr: "2021–now", fuel: "u91", tank: 65, real: 6.9, tow: 2000 },
+      { v: "2.4 Turbo petrol", yr: "2021–now", fuel: "u91", tank: 68, real: 10.8, tow: 2000, kerb: 2050, gvm: 2800, ball: 200 },
+      { v: "2.5 Hybrid AWD", yr: "2021–now", fuel: "u91", tank: 65, real: 6.9, tow: 2000, kerb: 2050, gvm: 2800, ball: 200 },
     ]},
     { model: "LandCruiser 100", variants: [
-      { v: "4.2 Turbo-Diesel", yr: "1998–2007", fuel: "diesel", tank: 145, real: 12.8, tow: 3500 },
+      { v: "4.2 Turbo-Diesel", yr: "1998–2007", fuel: "diesel", tank: 145, real: 12.8, tow: 3500, kerb: 2450, gvm: 3260, ball: 350 },
     ]},
     { model: "Tundra", variants: [
-      { v: "3.4 V6 Hybrid i-Force Max", yr: "2024–now", fuel: "u91", tank: 122, real: 13.5, tow: 4500 },
+      { v: "3.4 V6 Hybrid i-Force Max", yr: "2024–now", fuel: "u91", tank: 122, real: 13.5, tow: 4500, kerb: 2775, gvm: 3530, ball: 450 },
     ]},
     { model: "RAV4", variants: [
-      { v: "2.5 Hybrid AWD", yr: "2019–now", fuel: "u91", tank: 55, real: 6.3, tow: 1500 },
+      { v: "2.5 Hybrid AWD", yr: "2019–now", fuel: "u91", tank: 55, real: 6.3, tow: 1500, kerb: 1745, gvm: 2270, ball: 150 },
     ]},
     { model: "HiAce", variants: [
       { v: "2.8 Turbo-Diesel", yr: "2019–now", fuel: "diesel", tank: 70, real: 10.2, tow: 1900 },
@@ -93,20 +93,20 @@ const VEHICLE_DATA = [
   ]},
   { make: "Ford", models: [
     { model: "Ranger", variants: [
-      { v: "2.0 Bi-Turbo Diesel", yr: "2022–now", fuel: "diesel", tank: 80, real: 9.4, tow: 3500 },
-      { v: "3.0 V6 Turbo-Diesel", yr: "2022–now", fuel: "diesel", tank: 80, real: 10.4, tow: 3500 },
+      { v: "2.0 Bi-Turbo Diesel", yr: "2022–now", fuel: "diesel", tank: 80, real: 9.4, tow: 3500, kerb: 2250, gvm: 3230, ball: 350 },
+      { v: "3.0 V6 Turbo-Diesel", yr: "2022–now", fuel: "diesel", tank: 80, real: 10.4, tow: 3500, kerb: 2350, gvm: 3350, ball: 350 },
       { v: "3.2 Turbo-Diesel (PX)", yr: "2011–22", fuel: "diesel", tank: 80, real: 10, tow: 3500 },
-      { v: "Raptor 3.0 TT petrol", yr: "2022–now", fuel: "p95", tank: 80, real: 13.5, tow: 2500 },
+      { v: "Raptor 3.0 TT petrol", yr: "2022–now", fuel: "p95", tank: 80, real: 13.5, tow: 2500, kerb: 2350, gvm: 3350, ball: 350 },
     ]},
     { model: "Everest", variants: [
-      { v: "3.0 V6 Turbo-Diesel", yr: "2022–now", fuel: "diesel", tank: 80, real: 10.6, tow: 3500 },
-      { v: "2.0 Bi-Turbo Diesel", yr: "2022–now", fuel: "diesel", tank: 80, real: 9.8, tow: 3500 },
+      { v: "3.0 V6 Turbo-Diesel", yr: "2022–now", fuel: "diesel", tank: 80, real: 10.6, tow: 3500, kerb: 2450, gvm: 3150, ball: 350 },
+      { v: "2.0 Bi-Turbo Diesel", yr: "2022–now", fuel: "diesel", tank: 80, real: 9.8, tow: 3500, kerb: 2410, gvm: 3100, ball: 350 },
     ]},
     { model: "F-150", variants: [
-      { v: "3.5 EcoBoost V6", yr: "2023–now", fuel: "u91", tank: 136, real: 14.5, tow: 4500 },
+      { v: "3.5 EcoBoost V6", yr: "2023–now", fuel: "u91", tank: 136, real: 14.5, tow: 4500, kerb: 2555, gvm: 3265, ball: 450 },
     ]},
     { model: "Territory", variants: [
-      { v: "2.7 Turbo-Diesel", yr: "2011–16", fuel: "diesel", tank: 75, real: 10, tow: 2700 },
+      { v: "2.7 Turbo-Diesel", yr: "2011–16", fuel: "diesel", tank: 75, real: 10, tow: 2700, kerb: 2110, gvm: 2720, ball: 270 },
     ]},
     { model: "Falcon", variants: [
       { v: "4.0 XR6 (FG)", yr: "2008–16", fuel: "u91", tank: 68, real: 11.2, tow: 2300 },
@@ -117,16 +117,16 @@ const VEHICLE_DATA = [
   ]},
   { make: "Isuzu", models: [
     { model: "D-MAX", variants: [
-      { v: "3.0 Turbo-Diesel", yr: "2020–now", fuel: "diesel", tank: 76, real: 9.6, tow: 3500 },
-      { v: "1.9 Turbo-Diesel", yr: "2023–now", fuel: "diesel", tank: 76, real: 8.6, tow: 3000 },
+      { v: "3.0 Turbo-Diesel", yr: "2020–now", fuel: "diesel", tank: 76, real: 9.6, tow: 3500, kerb: 2100, gvm: 3100, ball: 350 },
+      { v: "1.9 Turbo-Diesel", yr: "2023–now", fuel: "diesel", tank: 76, real: 8.6, tow: 3000, kerb: 2100, gvm: 3100, ball: 350 },
     ]},
     { model: "MU-X", variants: [
-      { v: "3.0 Turbo-Diesel", yr: "2021–now", fuel: "diesel", tank: 80, real: 9.9, tow: 3500 },
+      { v: "3.0 Turbo-Diesel", yr: "2021–now", fuel: "diesel", tank: 80, real: 9.9, tow: 3500, kerb: 2205, gvm: 3000, ball: 350 },
     ]},
   ]},
   { make: "Mazda", models: [
     { model: "BT-50", variants: [
-      { v: "3.0 Turbo-Diesel", yr: "2020–now", fuel: "diesel", tank: 76, real: 9.6, tow: 3500 },
+      { v: "3.0 Turbo-Diesel", yr: "2020–now", fuel: "diesel", tank: 76, real: 9.6, tow: 3500, kerb: 2115, gvm: 3100, ball: 350 },
     ]},
     { model: "CX-5", variants: [
       { v: "2.5 Turbo petrol AWD", yr: "2018–now", fuel: "u91", tank: 58, real: 9.2, tow: 2000 },
@@ -143,16 +143,16 @@ const VEHICLE_DATA = [
   ]},
   { make: "Mitsubishi", models: [
     { model: "Triton", variants: [
-      { v: "2.4 Bi-Turbo Diesel", yr: "2024–now", fuel: "diesel", tank: 75, real: 9, tow: 3500 },
-      { v: "2.4 Turbo-Diesel", yr: "2015–24", fuel: "diesel", tank: 75, real: 9.3, tow: 3100 },
+      { v: "2.4 Bi-Turbo Diesel", yr: "2024–now", fuel: "diesel", tank: 75, real: 9, tow: 3500, kerb: 1995, gvm: 2900, ball: 310 },
+      { v: "2.4 Turbo-Diesel", yr: "2015–24", fuel: "diesel", tank: 75, real: 9.3, tow: 3100, kerb: 1995, gvm: 2900, ball: 310 },
     ]},
     { model: "Pajero Sport", variants: [
-      { v: "2.4 Turbo-Diesel", yr: "2016–now", fuel: "diesel", tank: 68, real: 9.8, tow: 3100 },
-      { v: "2.4 Turbo-Diesel", yr: "2015–now", fuel: "diesel", tank: 68, real: 9, tow: 3100 },
+      { v: "2.4 Turbo-Diesel", yr: "2016–now", fuel: "diesel", tank: 68, real: 9.8, tow: 3100, kerb: 2105, gvm: 2775, ball: 310 },
+      { v: "2.4 Turbo-Diesel", yr: "2015–now", fuel: "diesel", tank: 68, real: 9, tow: 3100, kerb: 2105, gvm: 2775, ball: 310 },
     ]},
     { model: "Pajero", variants: [
-      { v: "3.2 Turbo-Diesel (NX)", yr: "2015–21", fuel: "diesel", tank: 88, real: 11, tow: 3000 },
-      { v: "3.2 Turbo-Diesel", yr: "2006–21", fuel: "diesel", tank: 88, real: 10.8, tow: 3000 },
+      { v: "3.2 Turbo-Diesel (NX)", yr: "2015–21", fuel: "diesel", tank: 88, real: 11, tow: 3000, kerb: 2320, gvm: 2810 },
+      { v: "3.2 Turbo-Diesel", yr: "2006–21", fuel: "diesel", tank: 88, real: 10.8, tow: 3000, kerb: 2320, gvm: 2810 },
     ]},
     { model: "Outlander", variants: [
       { v: "2.5 AWD", yr: "2021–now", fuel: "u91", tank: 55, real: 8.6, tow: 1600 },
@@ -160,16 +160,16 @@ const VEHICLE_DATA = [
   ]},
   { make: "Nissan", models: [
     { model: "Navara", variants: [
-      { v: "2.3 Twin-Turbo Diesel", yr: "2015–now", fuel: "diesel", tank: 80, real: 9.2, tow: 3500 },
+      { v: "2.3 Twin-Turbo Diesel", yr: "2015–now", fuel: "diesel", tank: 80, real: 9.2, tow: 3500, kerb: 2170, gvm: 3150, ball: 300 },
     ]},
     { model: "Patrol", variants: [
       { v: "Y62 5.6 V8 petrol", yr: "2013–now", fuel: "p95", tank: 140, real: 16.5, tow: 3500 },
     ]},
     { model: "Patrol Y62", variants: [
-      { v: "5.6 V8 petrol", yr: "2013–now", fuel: "p95", tank: 140, real: 15.5, tow: 3500 },
+      { v: "5.6 V8 petrol", yr: "2013–now", fuel: "p95", tank: 140, real: 15.5, tow: 3500, kerb: 2812, gvm: 3620, ball: 350 },
     ]},
     { model: "Patrol GU", variants: [
-      { v: "4.2 Turbo-Diesel", yr: "1998–2007", fuel: "diesel", tank: 95, real: 12.8, tow: 3500 },
+      { v: "4.2 Turbo-Diesel", yr: "1998–2007", fuel: "diesel", tank: 95, real: 12.8, tow: 3500, kerb: 2400, ball: 350 },
     ]},
     { model: "Pathfinder", variants: [
       { v: "3.5 V6 AWD", yr: "2022–now", fuel: "u91", tank: 71, real: 11, tow: 2700 },
@@ -180,13 +180,13 @@ const VEHICLE_DATA = [
   ]},
   { make: "Volkswagen", models: [
     { model: "Amarok", variants: [
-      { v: "3.0 V6 TDI", yr: "2023–now", fuel: "diesel", tank: 80, real: 10.8, tow: 3500 },
-      { v: "2.0 Bi-Turbo TDI", yr: "2023–now", fuel: "diesel", tank: 80, real: 9.5, tow: 3500 },
-      { v: "3.0 V6 TDI 580", yr: "2017–22", fuel: "diesel", tank: 80, real: 11, tow: 3500 },
+      { v: "3.0 V6 TDI", yr: "2023–now", fuel: "diesel", tank: 80, real: 10.8, tow: 3500, kerb: 2270, gvm: 3170, ball: 300 },
+      { v: "2.0 Bi-Turbo TDI", yr: "2023–now", fuel: "diesel", tank: 80, real: 9.5, tow: 3500, kerb: 2270, gvm: 3170, ball: 300 },
+      { v: "3.0 V6 TDI 580", yr: "2017–22", fuel: "diesel", tank: 80, real: 11, tow: 3500, kerb: 2270, gvm: 3170, ball: 300 },
     ]},
     { model: "Touareg", variants: [
-      { v: "3.0 V6 TDI", yr: "2019–now", fuel: "diesel", tank: 90, real: 9.8, tow: 3500 },
-      { v: "3.0 V6 Turbo-Diesel", yr: "2019–now", fuel: "diesel", tank: 90, real: 9.2, tow: 3500 },
+      { v: "3.0 V6 TDI", yr: "2019–now", fuel: "diesel", tank: 90, real: 9.8, tow: 3500, kerb: 2155, gvm: 2900, ball: 280 },
+      { v: "3.0 V6 Turbo-Diesel", yr: "2019–now", fuel: "diesel", tank: 90, real: 9.2, tow: 3500, kerb: 2155, gvm: 2900, ball: 280 },
     ]},
     { model: "Transporter", variants: [
       { v: "2.0 BiTDI 4Motion", yr: "2016–now", fuel: "diesel", tank: 80, real: 9.8, tow: 3000 },
@@ -219,7 +219,7 @@ const VEHICLE_DATA = [
   ]},
   { make: "Jeep", models: [
     { model: "Grand Cherokee", variants: [
-      { v: "3.0 CRD Diesel", yr: "2013–21", fuel: "diesel", tank: 93, real: 10.5, tow: 3500 },
+      { v: "3.0 CRD Diesel", yr: "2013–21", fuel: "diesel", tank: 93, real: 10.5, tow: 3500, kerb: 2270, gvm: 2949, ball: 350 },
     ]},
     { model: "Gladiator", variants: [
       { v: "3.6 V6 petrol", yr: "2020–now", fuel: "u91", tank: 83, real: 12.6, tow: 2721 },
@@ -230,34 +230,34 @@ const VEHICLE_DATA = [
   ]},
   { make: "Land Rover", models: [
     { model: "Defender 110", variants: [
-      { v: "D300 Diesel", yr: "2020–now", fuel: "diesel", tank: 89, real: 10.4, tow: 3500 },
-      { v: "D300 3.0 Turbo-Diesel", yr: "2020–now", fuel: "diesel", tank: 89, real: 9.9, tow: 3500 },
+      { v: "D300 Diesel", yr: "2020–now", fuel: "diesel", tank: 89, real: 10.4, tow: 3500, kerb: 2361, gvm: 3165, ball: 350 },
+      { v: "D300 3.0 Turbo-Diesel", yr: "2020–now", fuel: "diesel", tank: 89, real: 9.9, tow: 3500, kerb: 2361, gvm: 3165, ball: 350 },
     ]},
     { model: "Discovery", variants: [
-      { v: "D300 Diesel", yr: "2021–now", fuel: "diesel", tank: 85, real: 10.2, tow: 3500 },
-      { v: "D300 3.0 Turbo-Diesel", yr: "2021–now", fuel: "diesel", tank: 90, real: 9.6, tow: 3500 },
+      { v: "D300 Diesel", yr: "2021–now", fuel: "diesel", tank: 85, real: 10.2, tow: 3500, kerb: 2358, gvm: 3130, ball: 350 },
+      { v: "D300 3.0 Turbo-Diesel", yr: "2021–now", fuel: "diesel", tank: 90, real: 9.6, tow: 3500, kerb: 2358, gvm: 3130, ball: 350 },
     ]},
   ]},
   { make: "RAM", models: [
     { model: "1500", variants: [
-      { v: "5.7 V8 petrol", yr: "2018–now", fuel: "u91", tank: 98, real: 14.8, tow: 4500 },
-      { v: "5.7 V8 Hemi", yr: "2018–now", fuel: "u91", tank: 98, real: 14.5, tow: 4500 },
+      { v: "5.7 V8 petrol", yr: "2018–now", fuel: "u91", tank: 98, real: 14.8, tow: 4500, kerb: 2650, gvm: 3450, ball: 450 },
+      { v: "5.7 V8 Hemi", yr: "2018–now", fuel: "u91", tank: 98, real: 14.5, tow: 4500, kerb: 2650, gvm: 3450, ball: 450 },
     ]},
     { model: "2500", variants: [
-      { v: "6.7 Cummins Turbo-Diesel", yr: "2018–now", fuel: "diesel", tank: 117, real: 15.8, tow: 4500 },
+      { v: "6.7 Cummins Turbo-Diesel", yr: "2018–now", fuel: "diesel", tank: 117, real: 15.8, tow: 4500, kerb: 3525, gvm: 4495, ball: 450 },
     ]},
   ]},
   { make: "Chevrolet", models: [
     { model: "Silverado 1500", variants: [
-      { v: "6.2 V8 petrol", yr: "2021–now", fuel: "p95", tank: 91, real: 15.5, tow: 4500 },
+      { v: "6.2 V8 petrol", yr: "2021–now", fuel: "p95", tank: 91, real: 15.5, tow: 4500, kerb: 2540, gvm: 3300, ball: 450 },
     ]},
     { model: "Silverado 2500HD", variants: [
-      { v: "6.6 Duramax Turbo-Diesel", yr: "2021–now", fuel: "diesel", tank: 136, real: 16, tow: 4500 },
+      { v: "6.6 Duramax Turbo-Diesel", yr: "2021–now", fuel: "diesel", tank: 136, real: 16, tow: 4500, kerb: 3700, gvm: 4500, ball: 450 },
     ]},
   ]},
   { make: "Kia", models: [
     { model: "Tasman", variants: [
-      { v: "2.2 Turbo-Diesel", yr: "2025–now", fuel: "diesel", tank: 80, real: 9.6, tow: 3500 },
+      { v: "2.2 Turbo-Diesel", yr: "2025–now", fuel: "diesel", tank: 80, real: 9.6, tow: 3500, kerb: 2242, gvm: 3250, ball: 350 },
     ]},
     { model: "Sorento", variants: [
       { v: "2.2 Turbo-Diesel", yr: "2020–now", fuel: "diesel", tank: 67, real: 8.6, tow: 2500 },
@@ -281,18 +281,18 @@ const VEHICLE_DATA = [
   ]},
   { make: "GMC", models: [
     { model: "Sierra 1500", variants: [
-      { v: "6.2 V8 petrol", yr: "2023–now", fuel: "p95", tank: 91, real: 13.9, tow: 4500 },
+      { v: "6.2 V8 petrol", yr: "2023–now", fuel: "p95", tank: 91, real: 13.9, tow: 4500, kerb: 2540, gvm: 3300, ball: 450 },
     ]},
     { model: "Sierra 2500HD", variants: [
-      { v: "6.6 Duramax Turbo-Diesel", yr: "2024–now", fuel: "diesel", tank: 136, real: 16, tow: 4500 },
+      { v: "6.6 Duramax Turbo-Diesel", yr: "2024–now", fuel: "diesel", tank: 136, real: 16, tow: 4500, kerb: 3700, gvm: 4500, ball: 450 },
     ]},
   ]},
   { make: "Holden", models: [
     { model: "Colorado", variants: [
-      { v: "2.8 Duramax Turbo-Diesel", yr: "2012–20", fuel: "diesel", tank: 76, real: 9.8, tow: 3500 },
+      { v: "2.8 Duramax Turbo-Diesel", yr: "2012–20", fuel: "diesel", tank: 76, real: 9.8, tow: 3500, kerb: 2100, gvm: 3150, ball: 350 },
     ]},
     { model: "Trailblazer", variants: [
-      { v: "2.8 Turbo-Diesel", yr: "2016–20", fuel: "diesel", tank: 76, real: 9.6, tow: 3000 },
+      { v: "2.8 Turbo-Diesel", yr: "2016–20", fuel: "diesel", tank: 76, real: 9.6, tow: 3000, kerb: 2203, gvm: 2900, ball: 300 },
     ]},
     { model: "Commodore", variants: [
       { v: "3.6 SV6 (VE/VF)", yr: "2006–17", fuel: "u91", tank: 71, real: 11.5, tow: 2100 },
@@ -319,7 +319,7 @@ const VEHICLE_DATA = [
   { make: "Mercedes-Benz", models: [
     { model: "GLE", variants: [
       { v: "300d 2.0 Turbo-Diesel", yr: "2019–now", fuel: "diesel", tank: 85, real: 8.8, tow: 2700 },
-      { v: "400d 3.0 Turbo-Diesel", yr: "2019–now", fuel: "diesel", tank: 85, real: 9.4, tow: 3500 },
+      { v: "400d 3.0 Turbo-Diesel", yr: "2019–now", fuel: "diesel", tank: 85, real: 9.4, tow: 3500, kerb: 2320, gvm: 3050, ball: 350 },
     ]},
     { model: "Sprinter", variants: [
       { v: "2.0 CDI (van / motorhome base)", yr: "2019–now", fuel: "diesel", tank: 93, real: 12, tow: 2000 },
@@ -1207,6 +1207,152 @@ const NODES = {
   meningie: { n: "Meningie", k: "town", f: true, d: 0.06, g: "Limestone Coast — SA", st: "SA",
     hrs: "~6am–8pm", fac: ["Fuel", "Food", "Toilets"],
     see: "Lake Albert pelicans; the Coorong&rsquo;s dune country", stay: "Lake Albert Caravan Park" },
+  /* ---- v0.26: south-west WA ---- */
+  bunbury: { n: "Bunbury", k: "city", f: true, d: 0.02, g: "South West — WA", st: "WA",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Dolphins at Koombana Bay; the Bunbury back beach", stay: "Discovery Parks Bunbury" },
+  busselton: { n: "Busselton", k: "town", f: true, d: 0.05, g: "South West — WA", st: "WA",
+    hrs: "Fuel ~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
+    see: "The 1.8 km jetty and its underwater observatory", stay: "RAC Busselton Holiday Park" },
+  margaretriver: { n: "Margaret River", k: "town", f: true, d: 0.08, wk: true, g: "South West — WA", st: "WA",
+    hrs: "Fuel ~6am–9pm", fac: ["Fuel", "Supermarket", "Dump point"],
+    see: "Wineries, surf breaks, and caves all within 20 minutes", stay: "Riverview Tourist Park" },
+  pemberton: { n: "Pemberton", k: "town", f: true, d: 0.1, g: "South West — WA", st: "WA",
+    hrs: "Fuel ~7am–7pm", fac: ["Fuel", "General store"],
+    see: "Climb the Gloucester Tree if your nerve holds; karri forest drives", stay: "Pemberton Caravan Park" },
+  walpole: { n: "Walpole", k: "town", f: true, d: 0.12, g: "South Coast — WA", st: "WA",
+    hrs: "Fuel ~7am–6pm", fac: ["Fuel", "General store"],
+    see: "Valley of the Giants Tree Top Walk among the tingles", stay: "Coalmine Beach Holiday Park" },
+  denmark: { n: "Denmark", k: "town", f: true, d: 0.1, g: "South Coast — WA", st: "WA",
+    hrs: "Fuel ~6am–8pm", fac: ["Fuel", "Supermarket"],
+    see: "Greens Pool and Elephant Rocks — the photos are real", stay: "Denmark Rivermouth Caravan Park" },
+  albany: { n: "Albany", k: "town", f: true, d: 0.06, wk: true, g: "South Coast — WA", st: "WA",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "The Gap and Natural Bridge; National Anzac Centre", stay: "BIG4 Emu Beach" },
+  esperance: { n: "Esperance", k: "town", f: true, d: 0.12, g: "Goldfields-Esperance — WA", st: "WA",
+    hrs: "Fuel ~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
+    see: "Lucky Bay — kangaroos on squeaky white sand", stay: "RAC Esperance Holiday Park" },
+  /* ---- v0.26: Top End ---- */
+  batchelor: { n: "Batchelor (Litchfield)", k: "town", f: true, d: 0.2, g: "Top End — NT", st: "NT",
+    hrs: "Fuel ~7am–7pm", fac: ["Fuel", "General store"],
+    see: "Litchfield: Florence and Wangi falls, Buley Rockhole", stay: "Litchfield Tourist Park" },
+  jabiru: { n: "Jabiru (Kakadu)", k: "town", f: true, d: 0.3, g: "Kakadu — NT", st: "NT",
+    hrs: "Fuel ~6am–8pm", fac: ["Fuel", "Supermarket", "Dump point"],
+    see: "Ubirr rock art and that floodplain sunset; park pass required", stay: "Anbinik Kakadu Resort" },
+  cooinda: { n: "Cooinda (Yellow Water)", k: "rh", f: true, d: 0.35, g: "Kakadu — NT", st: "NT",
+    hrs: "Fuel ~7am–7pm", fac: ["Fuel", "Meals", "Van sites"],
+    see: "Yellow Water cruise at dawn — crocs, brolgas, lotus", stay: "Cooinda Lodge campground" },
+  pinecreek: { n: "Pine Creek", k: "town", f: true, d: 0.25, g: "Stuart Hwy — NT", st: "NT",
+    hrs: "Fuel ~7am–7pm", fac: ["Fuel", "General store"],
+    see: "Gold-rush relics; the back door to Kakadu", stay: "Lazy Lizard Caravan Park" },
+  /* ---- v0.26: the Gibb ---- */
+  imintji: { n: "Imintji", k: "rh", f: true, d: 0.75, g: "Gibb River Rd — WA", st: "WA",
+    hrs: "Store ~8am–4pm (dry season)", fac: ["Fuel", "Store", "Camp"],
+    see: "Gateway to Bell Gorge — the Gibb\u2019s first great swim", stay: "Imintji Campground" },
+  mtbarnett: { n: "Mt Barnett", k: "rh", f: true, d: 0.85, g: "Gibb River Rd — WA", st: "WA",
+    hrs: "Roadhouse ~7am–5pm (dry season)", fac: ["Fuel", "Store", "Camp"],
+    see: "Manning Gorge walk and waterhole from the campground", stay: "Manning Gorge campground" },
+  ellenbrae: { n: "Ellenbrae Station", k: "rh", f: false, d: 0, g: "Gibb River Rd — WA", st: "WA",
+    hrs: "Scones ~8am–4pm (dry season)", fac: ["Famous scones", "Camp"],
+    see: "The scone stop of the Kimberley — 70,000 a season", stay: "Ellenbrae station camp" },
+  elquestro: { n: "El Questro", k: "town", f: true, d: 0.6, g: "Gibb River Rd — WA", st: "WA",
+    hrs: "Station hours (dry season)", fac: ["Fuel", "Meals", "Camp"],
+    see: "Emma Gorge, Zebedee springs, El Questro Gorge", stay: "El Questro Station township" },
+  /* ---- v0.26: Gulf Savannah ---- */
+  borroloola: { n: "Borroloola", k: "town", f: true, d: 0.4, g: "Gulf — NT", st: "NT",
+    hrs: "Fuel ~7am–7pm", fac: ["Fuel", "Store", "Dump point"],
+    see: "King Ash Bay fishing; barra country proper", stay: "McArthur River Caravan Park" },
+  hellsgate: { n: "Hells Gate", k: "rh", f: true, d: 0.6, g: "Savannah Way — QLD", st: "QLD",
+    hrs: "Roadhouse ~7am–6pm (dry)", fac: ["Fuel", "Meals", "Camp"],
+    see: "The border roadhouse — last fuel into the NT gulf", stay: "Hells Gate Roadhouse camp" },
+  burketown: { n: "Burketown", k: "town", f: true, d: 0.45, g: "Gulf — QLD", st: "QLD",
+    hrs: "Fuel ~7am–6pm", fac: ["Fuel", "Store", "Dump point"],
+    see: "Morning Glory clouds (Sep–Nov); barramundi capital claims", stay: "Savannah Lodge Burketown" },
+  normanton: { n: "Normanton", k: "town", f: true, d: 0.35, g: "Gulf — QLD", st: "QLD",
+    hrs: "Fuel ~6am–8pm", fac: ["Fuel", "Supermarket", "Dump point"],
+    see: "Krys the 8.6 m croc replica; the Gulflander railmotor", stay: "Normanton Tourist Park" },
+  karumba: { n: "Karumba", k: "town", f: true, d: 0.35, g: "Gulf — QLD", st: "QLD",
+    hrs: "Fuel ~7am–6pm", fac: ["Fuel", "Store", "Dump point"],
+    see: "The only Gulf town on the water — sunset over the sea, prawns in hand", stay: "Karumba Point Sunset Caravan Park" },
+  croydon: { n: "Croydon", k: "town", f: true, d: 0.3, g: "Savannah Way — QLD", st: "QLD",
+    hrs: "Fuel ~7am–6pm", fac: ["Fuel", "Store"],
+    see: "Gold-rush streetscape kept honest", stay: "Croydon Caravan Park" },
+  georgetown: { n: "Georgetown", k: "town", f: true, d: 0.3, g: "Savannah Way — QLD", st: "QLD",
+    hrs: "Fuel ~7am–7pm", fac: ["Fuel", "Store"],
+    see: "Terrestrial gem and mineral collection — better than it sounds", stay: "Goldfields Caravan Park" },
+  mtsurprise: { n: "Mount Surprise", k: "town", f: true, d: 0.3, g: "Savannah Way — QLD", st: "QLD",
+    hrs: "Fuel ~7am–6pm", fac: ["Fuel", "Store", "Camp"],
+    see: "Undara lava tubes just down the road — book the tour", stay: "Bedrock Village Caravan Park" },
+  atherton: { n: "Atherton", k: "town", f: true, d: 0.1, g: "Tablelands — QLD", st: "QLD",
+    hrs: "Fuel ~6am–9pm", fac: ["Fuel", "Supermarkets", "Dump point"],
+    see: "Waterfall circuit, curtain fig, platypus at Yungaburra", stay: "Atherton Halloran\u2019s Leisure Park" },
+  /* ---- v0.26: Cape York ---- */
+  mareeba: { n: "Mareeba", k: "town", f: true, d: 0.08, g: "Tablelands — QLD", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Coffee farms and rodeo country at the top of the range", stay: "Riverside Tourist Park" },
+  laura: { n: "Laura", k: "town", f: true, d: 0.35, g: "Cape York — QLD", st: "QLD",
+    hrs: "Fuel ~8am–5pm", fac: ["Fuel", "Store"],
+    see: "Split Rock gallery — Quinkan rock art, world class", stay: "Laura campground" },
+  coen: { n: "Coen", k: "town", f: true, d: 0.45, g: "Cape York — QLD", st: "QLD",
+    hrs: "Fuel ~7am–6pm (dry)", fac: ["Fuel", "Store", "Camp"],
+    see: "The Cape\u2019s halfway town — check the Peninsula road report here", stay: "Coen riverside camp" },
+  archerriver: { n: "Archer River", k: "rh", f: true, d: 0.55, g: "Cape York — QLD", st: "QLD",
+    hrs: "Roadhouse ~7am–7pm (dry)", fac: ["Fuel", "Famous burgers", "Camp"],
+    see: "The Archer burger is a rite of passage", stay: "Archer River Roadhouse camp" },
+  bramwell: { n: "Bramwell Junction", k: "rh", f: true, d: 0.6, g: "Cape York — QLD", st: "QLD",
+    hrs: "Roadhouse ~7am–6pm (dry)", fac: ["Fuel", "Meals", "Camp"],
+    see: "Where the Old Telegraph Track begins — watch the crossings from the safe side", stay: "Bramwell Junction camp" },
+  bamaga: { n: "Bamaga (The Tip)", k: "town", f: true, d: 0.55, g: "Cape York — QLD", st: "QLD",
+    hrs: "Fuel ~7am–6pm", fac: ["Fuel", "Supermarket", "Camp"],
+    see: "Stand at the northernmost point of the continent — Pajinka, the Tip itself", stay: "Loyalty Beach campground" },
+  /* ---- v0.26: New England & outback NSW ---- */
+  dubbo: { n: "Dubbo", k: "city", f: true, d: 0.05, wk: true, g: "Central West — NSW", st: "NSW",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Taronga Western Plains Zoo — worth the trip alone", stay: "Dubbo Holiday Park" },
+  nyngan: { n: "Nyngan", k: "town", f: true, d: 0.12, g: "Outback NSW", st: "NSW",
+    hrs: "Fuel ~6am–9pm", fac: ["Fuel", "Supermarket", "Dump point"],
+    see: "The Big Bogan, photographed without irony", stay: "Nyngan Riverside Tourist Park" },
+  bourke: { n: "Bourke", k: "town", f: true, d: 0.18, g: "Outback NSW", st: "NSW",
+    hrs: "Fuel ~6am–8pm", fac: ["Fuel", "Supermarket", "Dump point"],
+    see: "Back O\u2019 Bourke Exhibition Centre; Darling River sunsets", stay: "Kidman\u2019s Camp" },
+  lightningridge: { n: "Lightning Ridge", k: "town", f: true, d: 0.18, g: "Outback NSW", st: "NSW",
+    hrs: "Fuel ~6am–8pm", fac: ["Fuel", "Supermarket", "Dump point"],
+    see: "Black opal mines, artesian bore baths at midnight, car-door tours", stay: "Opal Caravan Park" },
+  moree: { n: "Moree", k: "town", f: true, d: 0.1, g: "North West — NSW", st: "NSW",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Hot artesian pools — the grey nomad wintering hole", stay: "Gwydir Thermal Pools Holiday Park" },
+  goondiwindi: { n: "Goondiwindi", k: "town", f: true, d: 0.08, g: "Border — QLD", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Gunsynd the Goondiwindi Grey; Macintyre River walk", stay: "Goondiwindi Holiday Park" },
+  tamworth: { n: "Tamworth", k: "city", f: true, d: 0.05, g: "New England — NSW", st: "NSW",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "The Golden Guitar; country music capital swagger", stay: "Paradise Tourist Park" },
+  armidale: { n: "Armidale", k: "town", f: true, d: 0.08, g: "New England — NSW", st: "NSW",
+    hrs: "Fuel ~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
+    see: "Autumn colour, cathedral city, waterfalls out east", stay: "Armidale Tourist Park" },
+  tenterfield: { n: "Tenterfield", k: "town", f: true, d: 0.12, g: "New England — NSW", st: "NSW",
+    hrs: "Fuel ~6am–9pm", fac: ["Fuel", "Supermarket"],
+    see: "The Saddler, of the song; Bald Rock nearby", stay: "Tenterfield Lodge Caravan Park" },
+  warwick: { n: "Warwick", k: "town", f: true, d: 0.08, g: "Southern Downs — QLD", st: "QLD",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Rose city rodeo country; Girraween granite an hour south", stay: "BIG4 Warwick" },
+  /* ---- v0.26: Princes Hwy coast ---- */
+  nowra: { n: "Nowra", k: "town", f: true, d: 0.05, g: "Shoalhaven — NSW", st: "NSW",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Jervis Bay\u2019s white sand 20 minutes east — Hyams Beach", stay: "Shoalhaven Caravan Village" },
+  batemansbay: { n: "Batemans Bay", k: "town", f: true, d: 0.06, wk: true, g: "Eurobodalla — NSW", st: "NSW",
+    hrs: "Fuel ~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
+    see: "Oysters off the leases; Murramarang kangaroo beaches", stay: "BIG4 Batemans Bay" },
+  merimbula: { n: "Merimbula", k: "town", f: true, d: 0.08, g: "Sapphire Coast — NSW", st: "NSW",
+    hrs: "Fuel ~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
+    see: "Whales (Sep–Nov), boardwalk over the lake, Eden\u2019s killer whale museum south", stay: "NRMA Merimbula Beach" },
+  lakesentrance: { n: "Lakes Entrance", k: "town", f: true, d: 0.08, wk: true, g: "Gippsland — VIC", st: "VIC",
+    hrs: "Fuel ~5am–10pm", fac: ["Fuel", "Supermarkets", "Dump point"],
+    see: "Ninety Mile Beach meets the Gippsland Lakes; fresh fish co-op", stay: "BIG4 Whiters Lakes Entrance" },
+  sale: { n: "Sale", k: "town", f: true, d: 0.05, g: "Gippsland — VIC", st: "VIC",
+    hrs: "24 hr fuel", fac: ["24 hr fuel", "Supermarkets", "Dump point"],
+    see: "Port of Sale arts precinct; wetlands boardwalk", stay: "Marlay Point / Sale Motor Village" },
+
 };
 
 const EDGES = [
@@ -1285,6 +1431,33 @@ const EDGES = [
   ["portcampbell","warrnambool",66,"r"], ["warrnambool","portfairy",28,"f"], ["portfairy","portland",72,"r"],
   ["portland","mtgambier",105,"f"], ["mtgambier","robe",130,"r"], ["robe","meningie",192,"f"],
   ["meningie","tailembend",60,"f"],
+  /* v0.26: south-west WA */
+  ["perth","bunbury",175,"f"], ["bunbury","busselton",53,"f"], ["busselton","margaretriver",48,"r"],
+  ["margaretriver","pemberton",130,"r"], ["pemberton","walpole",120,"r"], ["walpole","denmark",66,"r"],
+  ["denmark","albany",55,"r"], ["albany","esperance",480,"r"], ["esperance","norseman",205,"r"],
+  /* v0.26: Top End */
+  ["darwin","batchelor",98,"f"], ["darwin","jabiru",255,"r"], ["jabiru","cooinda",55,"r"],
+  ["cooinda","pinecreek",160,"r"], ["pinecreek","katherine",90,"f"], ["batchelor","pinecreek",135,"r"],
+  /* v0.26: the Gibb (dry season, corrugations — check conditions) */
+  ["derby","imintji",227,"u"], ["imintji","mtbarnett",79,"u"], ["mtbarnett","ellenbrae",140,"u"],
+  ["ellenbrae","elquestro",130,"u"], ["elquestro","kununurra",110,"u"],
+  /* v0.26: Gulf Savannah */
+  ["dalywaters","borroloola",380,"r"], ["borroloola","hellsgate",320,"u"], ["hellsgate","burketown",170,"u"],
+  ["burketown","normanton",230,"u"], ["normanton","karumba",70,"r"], ["normanton","croydon",150,"r"],
+  ["croydon","georgetown",148,"r"], ["georgetown","mtsurprise",92,"r"], ["mtsurprise","atherton",150,"r"],
+  ["atherton","cairns",90,"h"], ["atherton","mareeba",30,"f"],
+  /* v0.26: Cape York (dry season; Jardine ferry before Bamaga) */
+  ["cairns","mareeba",64,"h"], ["mareeba","laura",250,"r"], ["laura","coen",245,"u"],
+  ["coen","archerriver",65,"u"], ["archerriver","bramwell",175,"u"], ["bramwell","bamaga",200,"u"],
+  /* v0.26: New England & outback NSW */
+  ["sydney","dubbo",390,"h"], ["dubbo","nyngan",165,"f"], ["nyngan","bourke",200,"f"],
+  ["moree","lightningridge",190,"r"], ["moree","goondiwindi",120,"f"], ["goondiwindi","toowoomba",225,"f"],
+  ["moree","tamworth",285,"f"], ["newcastle","tamworth",285,"h"], ["tamworth","armidale",110,"h"],
+  ["armidale","tenterfield",180,"h"], ["tenterfield","warwick",105,"h"], ["warwick","toowoomba",85,"f"],
+  /* v0.26: Princes Hwy coast */
+  ["sydney","nowra",160,"h"], ["nowra","batemansbay",110,"h"], ["batemansbay","merimbula",175,"h"],
+  ["merimbula","lakesentrance",280,"h"], ["lakesentrance","sale",70,"f"], ["sale","melbourne",215,"f"],
+
 ];
 
 const ADJ = {};
@@ -1317,6 +1490,34 @@ function findPath(from, to) {
   while (ids[0] !== from) ids.unshift(prev[ids[0]]);
   return ids;
 }
+
+/* ============ Share-a-Trip: the plan travels inside the link ============ */
+
+const encodeTrip = (w, s, m) => {
+  try {
+    const json = JSON.stringify({ w, s: s || {}, m: m || null });
+    return btoa(unescape(encodeURIComponent(json)))
+      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  } catch (e) { return null; }
+};
+const decodeTrip = (code) => {
+  try {
+    const b = code.replace(/-/g, "+").replace(/_/g, "/");
+    const obj = JSON.parse(decodeURIComponent(escape(atob(b))));
+    if (!obj || !Array.isArray(obj.w)) return null;
+    const w = obj.w.filter((id) => NODES[id]);
+    if (w.length < 2) return null;
+    const s = {};
+    if (obj.s && typeof obj.s === "object") {
+      Object.keys(obj.s).forEach((id) => {
+        if (NODES[id]) s[id] = Math.max(0, Math.min(30, Number(obj.s[id]) || 0));
+      });
+    }
+    const m = obj.m && obj.m.start && obj.m.end && NODES[obj.m.start] && NODES[obj.m.end]
+      ? { start: obj.m.start, end: obj.m.end } : null;
+    return { w, s, m };
+  } catch (e) { return null; }
+};
 
 /* ============ Community layer: kinds, handles, ages ============ */
 
@@ -1365,6 +1566,10 @@ const BADGE_ROUTES = {
   outbackway: corridorIds([["winton", "laverton"]]),
   biglap: corridorIds([["adelaide", "melbourne"], ["melbourne", "sydney"], ["sydney", "brisbane"],
     ["brisbane", "cairns"], ["cairns", "darwin"], ["darwin", "broome"], ["broome", "perth"], ["perth", "adelaide"]]),
+  thetip: corridorIds([["cairns", "bamaga"]]),
+  gibb: corridorIds([["derby", "imintji"], ["imintji", "mtbarnett"], ["mtbarnett", "ellenbrae"],
+    ["ellenbrae", "elquestro"], ["elquestro", "kununurra"]]), /* pinned to the dirt — the highway must not earn this badge */
+  savannah: corridorIds([["katherine", "burketown"], ["burketown", "cairns"]]),
 };
 
 const BADGES = [
@@ -1404,6 +1609,12 @@ const BADGES = [
       vis.forEach((id) => { if (NODES[id] && NODES[id].k === "rh") n += 1; });
       return n >= 10;
     } },
+  { id: "thetip", emoji: "🏁", name: "Made It To The Tip", hint: "Cairns to Bamaga up the Peninsula",
+    test: (vis) => BADGE_ROUTES.thetip.every((id) => vis.has(id)) },
+  { id: "gibb", emoji: "🏞️", name: "Gibb River Legend", hint: "Derby to Kununurra the corrugated way",
+    test: (vis) => BADGE_ROUTES.gibb.every((id) => vis.has(id)) },
+  { id: "savannah", emoji: "🐊", name: "Savannah Wayfarer", hint: "Katherine to Cairns through the Gulf",
+    test: (vis) => BADGE_ROUTES.savannah.every((id) => vis.has(id)) },
   { id: "scribe", emoji: "📝", name: "Trip Scribe", hint: "Write journal notes at 5 stops",
     test: (vis, jx) => !!jx && jx.notes >= 5 },
   { id: "snaps", emoji: "📷", name: "Snapshot Collector", hint: "Add 10 photos to your journal",
@@ -1458,7 +1669,16 @@ const TRIPS = [
     blurb: "Australia\u2019s longest shortcut \u2014 dinosaurs at Winton, the Plenty Highway\u2019s station country, the red heart and Uluru, then the Great Central Road to the Goldfields. Genuine dirt-road adventure: off-road van territory, carry extra everything, permits sorted before you go." },
   { id: "matilda", name: "Matilda Country",
     stops: ["brisbane", "roma", "longreach", "winton"],
-    blurb: "Waltzing Matilda country on full bitumen. Roma\u2019s cattle sales, artesian hot soaks at Mitchell and Blackall, the Qantas Founders Museum and Stockman\u2019s Hall of Fame in Longreach, dinosaur stampedes at Winton \u2014 and outback pubs like the Walkabout Creek all the way." },
+    blurb: "Waltzing Matilda country on full bitumen. Roma\u2019s cattle sales, artesian hot soaks at Mitchell and Blackall, the Qantas Founders Museum and Stockman\u2019s Hall of Fame in Longreach, dinosaur stampedes at Winton \u2014 and outback pubs like the Walkabout Creek all the way." },  { id: "capeyork", name: "Cape York — the Tip",
+    stops: ["cairns", "mareeba", "laura", "coen", "archerriver", "bramwell", "bamaga"],
+    blurb: "The pilgrimage. Up the Peninsula Developmental Road through Quinkan rock-art country, an Archer River burger, the Jardine ferry, and finally the sign at Pajinka: you are standing at the northernmost point of the Australian continent. Dry season only (roughly May\u2013Nov) \u2014 corrugations guaranteed, bragging rights permanent." },
+  { id: "gibb", name: "The Gibb River Road",
+    stops: ["broome", "derby", "imintji", "mtbarnett", "ellenbrae", "elquestro", "kununurra"],
+    blurb: "660 km of the Kimberley\u2019s greatest hits joined by corrugated dirt: Bell and Manning gorges, scones at Ellenbrae, Emma Gorge and Zebedee springs at El Questro. Dry season only (May\u2013Sep), off-road van or camper strongly advised \u2014 and fuel at Mt Barnett costs what it costs." },
+  { id: "savannah", name: "The Savannah Way",
+    stops: ["katherine", "dalywaters", "borroloola", "hellsgate", "burketown", "normanton", "karumba", "normanton", "croydon", "georgetown", "mtsurprise", "atherton", "cairns"],
+    blurb: "Coast to coast across the top \u2014 the Gulf way. Barra water at Borroloola, the border beer at Hells Gate, sunset prawns at Karumba (the only Gulf town on the sea), lava tubes at Undara, then over the Tablelands and down the range into Cairns. Dry season for the unsealed middle." },
+
 ];
 
 const STATE_GROUPS = [
@@ -1538,6 +1758,22 @@ const COORDS = {
   torquay:[-38.33,144.32], apollobay:[-38.76,143.67], portcampbell:[-38.62,142.99],
   warrnambool:[-38.38,142.48], portfairy:[-38.39,142.24], portland:[-38.34,141.6],
   mtgambier:[-37.83,140.78], robe:[-37.16,139.76], meningie:[-35.69,139.34],
+  bunbury:[-33.33,115.64], busselton:[-33.65,115.35], margaretriver:[-33.95,115.07],
+  pemberton:[-34.44,116.03], walpole:[-34.98,116.73], denmark:[-34.96,117.35],
+  albany:[-35.02,117.88], esperance:[-33.86,121.89],
+  batchelor:[-13.05,131.03], jabiru:[-12.67,132.84], cooinda:[-12.9,132.52], pinecreek:[-13.82,131.83],
+  imintji:[-17.43,125.28], mtbarnett:[-16.66,125.91], ellenbrae:[-15.95,127.07], elquestro:[-16.01,128.0],
+  borroloola:[-16.07,136.3], hellsgate:[-17.45,138.36], burketown:[-17.74,139.55],
+  normanton:[-17.67,141.08], karumba:[-17.48,140.83], croydon:[-18.2,142.24],
+  georgetown:[-18.29,143.55], mtsurprise:[-18.15,144.32], atherton:[-17.27,145.48],
+  mareeba:[-17.0,145.42], laura:[-15.56,144.45], coen:[-13.94,143.2],
+  archerriver:[-13.43,142.94], bramwell:[-12.15,142.61], bamaga:[-10.89,142.39],
+  dubbo:[-32.24,148.6], nyngan:[-31.56,147.19], bourke:[-30.09,145.94],
+  lightningridge:[-29.43,147.98], moree:[-29.46,149.84], goondiwindi:[-28.55,150.31],
+  tamworth:[-31.09,150.93], armidale:[-30.51,151.66], tenterfield:[-29.05,152.02], warwick:[-28.22,152.03],
+  nowra:[-34.88,150.6], batemansbay:[-35.71,150.18], merimbula:[-36.89,149.9],
+  lakesentrance:[-37.88,147.98], sale:[-38.11,147.07],
+
 };
 
 /* WMO weather codes → label + emoji */
@@ -1852,7 +2088,7 @@ function RouteMap({ route, waypoints, fills, dayAt, stays, marks, visited, onTog
   }, [mapState, route, waypoints, fills, dayAt, stays, marks, visited]);
 
   return (
-    <div className="jp-card p-5">
+    <div className="jp-card p-5 jp-sec-trip">
       <div className="flex items-center justify-between gap-2 mb-3">
         <span className="jp-eyebrow inline-flex items-center gap-2">
           <MapIcon size={16} style={{ color: "var(--sign)" }} aria-hidden /> Route map
@@ -2020,7 +2256,7 @@ function TripIdeas({ onLoad }) {
   );
 
   return (
-    <div className="jp-card p-5">
+    <div className="jp-card p-5 jp-sec-plan">
       <div className="flex items-center gap-2 mb-1">
         <Compass size={18} style={{ color: "var(--sign)" }} aria-hidden />
         <span className="jp-eyebrow">Trip ideas</span>
@@ -2154,7 +2390,7 @@ export default function JourneyPro() {
   const [openIdx, setOpenIdx] = useState(null);
 
   const [vehMode, setVehMode] = useState("list");
-  const [customVeh, setCustomVeh] = useState({ name: "My rig", fuel: "diesel", tank: 80, real: 10, tow: 3500 });
+  const [customVeh, setCustomVeh] = useState({ name: "My rig", fuel: "diesel", tank: 80, real: 10, tow: 3500, ball: "", kerb: "", gvm: "" });
   const [vanMode, setVanMode] = useState("list");
   const [customVan, setCustomVan] = useState({ style: "full", len: 19, tare: 2200, atm: 2800 });
   const [wx, setWx] = useState({ status: "idle", byId: {} });
@@ -2170,6 +2406,8 @@ export default function JourneyPro() {
   const [tripMarks, setTripMarks] = useState(null);
   const [travel, setTravel] = useState(null); /* { active, startedISO, pos, wp, stays, marks } */
   const [travelView, setTravelView] = useState(null); /* stop index being browsed; null = follow the trip */
+  const [tab, setTab] = useState("plan"); /* mobile page: rig | plan | trip | travel | mymap */
+  const [offline, setOffline] = useState(false);
   const [visited, setVisited] = useState({}); /* id -> ISO date first visited */
   const [journal, setJournal] = useState({}); /* id -> { rating, note, photos[], updated } */
   const [journalLoaded, setJournalLoaded] = useState(false);
@@ -2183,6 +2421,11 @@ export default function JourneyPro() {
   const [repText, setRepText] = useState("");
   const [repBusy, setRepBusy] = useState(false);
   const [livePrices, setLivePrices] = useState({}); /* id -> { loading, min, avg, n, src, at } */
+  const [fillLog, setFillLog] = useState([]); /* { id, d, L, $, k, trip } */
+  const [fillLoaded, setFillLoaded] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
+  const [logL, setLogL] = useState("");
+  const [logD, setLogD] = useState("");
 
   const make = VEHICLE_DATA[makeIdx];
   const model = make.models[Math.min(modelIdx, make.models.length - 1)];
@@ -2191,7 +2434,10 @@ export default function JourneyPro() {
     ? { v: customVeh.name, fuel: customVeh.fuel,
         tank: Math.max(10, Number(customVeh.tank) || 0),
         real: Math.max(3, Number(customVeh.real) || 0),
-        tow: Math.max(0, Number(customVeh.tow) || 0) }
+        tow: Math.max(0, Number(customVeh.tow) || 0),
+        ball: Math.max(0, Number(customVeh.ball) || 0) || undefined,
+        kerb: Math.max(0, Number(customVeh.kerb) || 0) || undefined,
+        gvm: Math.max(0, Number(customVeh.gvm) || 0) || undefined }
     : picked;
   const fuelLabel = FUEL_META[vehicle.fuel].label;
 
@@ -2352,6 +2598,9 @@ export default function JourneyPro() {
   };
   const [story, setStory] = useState(null); /* dataURL of the generated card */
   const [storyBusy, setStoryBusy] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [sharedIn, setSharedIn] = useState(null); /* { a, b, n } — a trip arrived via link */
+  const sharedRef = useRef(false);
 
   const makeStory = async () => {
     if (typeof document === "undefined" || route.segs.length === 0 || storyBusy) return;
@@ -2634,6 +2883,7 @@ export default function JourneyPro() {
   const LIVE_FUEL_STATES = ["WA", "NSW", "TAS"];
   const loadFuel = (id) => {
     if (!id || !NODES[id] || typeof fetch === "undefined") return;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return;
     if (!LIVE_FUEL_STATES.includes(NODES[id].st)) return;
     const cur = livePrices[id];
     if (cur && (cur.loading || (cur.at && Date.now() - cur.at < 1800000))) return;
@@ -2656,6 +2906,7 @@ export default function JourneyPro() {
 
   const loadCommunity = (id) => {
     if (!id || !NODES[id] || typeof fetch === "undefined") return;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return;
     const cur = community[id];
     if (cur && (cur.loading || (cur.at && Date.now() - cur.at < 60000))) return;
     setCommunity((p) => ({ ...p, [id]: { ...(p[id] || {}), loading: true } }));
@@ -2851,6 +3102,93 @@ export default function JourneyPro() {
     setDraftNote(jid && journal[jid] && journal[jid].note ? journal[jid].note : "");
   }, [openIdx]);
 
+  const persistFills = async (arr) => {
+    if (typeof window === "undefined" || !window.storage) return;
+    try { await window.storage.set("fills:v1", JSON.stringify(arr)); } catch (e) { /* best effort */ }
+  };
+  const addFill = (id, k) => {
+    const L = Number(logL), D = Number(logD);
+    if (!travel || !(L > 0) || !(D > 0) || !NODES[id]) return;
+    const entry = {
+      id, d: new Date().toISOString().slice(0, 10),
+      L: Math.round(L * 10) / 10, $: Math.round(D),
+      k: Math.round(k), trip: travel.startedISO,
+    };
+    setFillLog([...fillLog, entry]);
+    setLogOpen(false);
+  };
+  const removeFill = (entry) => setFillLog(fillLog.filter((f) => f !== entry));
+
+  useEffect(() => {
+    /* Load the fill log */
+    if (typeof window === "undefined" || !window.storage) { setFillLoaded(true); return; }
+    (async () => {
+      try {
+        const res = await window.storage.get("fills:v1");
+        if (res && res.value) {
+          const arr = JSON.parse(res.value);
+          if (Array.isArray(arr)) setFillLog(arr);
+        }
+      } catch (e) { /* no fills yet */ }
+      setFillLoaded(true);
+    })();
+  }, []);
+  useEffect(() => {
+    if (!fillLoaded) return;
+    persistFills(fillLog);
+  }, [fillLog, fillLoaded]);
+
+  useEffect(() => {
+    /* Watch reception come and go */
+    if (typeof window === "undefined") return;
+    const upd = () => setOffline(typeof navigator !== "undefined" && navigator.onLine === false);
+    upd();
+    window.addEventListener("online", upd);
+    window.addEventListener("offline", upd);
+    return () => {
+      window.removeEventListener("online", upd);
+      window.removeEventListener("offline", upd);
+    };
+  }, []);
+
+  const shareTripLink = async () => {
+    if (typeof window === "undefined" || route.segs.length === 0) return;
+    const code = encodeTrip(waypoints, stays, tripMarks);
+    if (!code) return;
+    const url = window.location.origin + window.location.pathname + "#trip=" + code;
+    const title = startId === endId
+      ? "Loop from " + NODES[startId].n
+      : NODES[startId].n + " → " + NODES[endId].n;
+    const text = title + " — " + fmt(plan.km) + " km, ~" + plan.days +
+      " days. Open it and the costs calculate for YOUR rig. Planned with JourneyPro.";
+    try {
+      if (navigator.share) { await navigator.share({ title: "JourneyPro trip", text, url }); return; }
+    } catch (e) { /* fall through to copy */ }
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    } catch (e) {
+      window.prompt("Copy this trip link:", url);
+    }
+  };
+
+  useEffect(() => {
+    /* A shared trip arriving via the link takes the wheel */
+    if (typeof window === "undefined") return;
+    const mm = (window.location.hash || "").match(/#trip=([A-Za-z0-9\-_]+)/);
+    if (!mm) return;
+    const t = decodeTrip(mm[1]);
+    if (!t) return;
+    sharedRef.current = true;
+    setWaypoints(t.w);
+    setStays(t.s);
+    setTripMarks(t.m);
+    setTab("trip");
+    setSharedIn({ a: t.w[0], b: t.w[t.w.length - 1], n: t.w.length });
+    try { window.history.replaceState(null, "", window.location.pathname + window.location.search); } catch (e) { /* fine */ }
+  }, []);
+
   const persistTravel = async (t) => {
     if (typeof window === "undefined" || !window.storage) return;
     try {
@@ -2863,6 +3201,7 @@ export default function JourneyPro() {
     /* Resume an in-progress trip when the app reopens */
     if (typeof window === "undefined" || !window.storage) return;
     (async () => {
+      if (sharedRef.current) return; /* a shared link takes the wheel this session */
       try {
         const res = await window.storage.get("travel:active");
         if (res && res.value) {
@@ -2872,6 +3211,7 @@ export default function JourneyPro() {
             setStays(t.stays && typeof t.stays === "object" ? t.stays : {});
             setTripMarks(t.marks || null);
             setTravel(t);
+            setTab("travel");
           }
         }
       } catch (e) { /* no trip in progress */ }
@@ -2887,7 +3227,7 @@ export default function JourneyPro() {
       stays: { ...stays },
       marks: tripMarks,
     };
-    setTravel(t); persistTravel(t); setTravelView(null);
+    setTravel(t); persistTravel(t); setTravelView(null); setTab("travel");
     markVisited([route.stops[0]]);
   };
   const travelStep = (dir) => {
@@ -2897,9 +3237,10 @@ export default function JourneyPro() {
     const t = { ...travel, pos };
     setTravel(t); persistTravel(t); setTravelView(null);
   };
-  const endTravel = () => { setTravel(null); persistTravel(null); setTravelView(null); };
+  const endTravel = () => { setTravel(null); persistTravel(null); setTravelView(null); setTab("trip"); };
 
   const loadSuggested = (stops, staysObj = {}, marks = null) => {
+    setTab("trip");
     setWaypoints(stops.filter((id) => NODES[id]));
     setStays(staysObj);
     setTripMarks(marks);
@@ -3055,6 +3396,8 @@ export default function JourneyPro() {
     const nextFill = fillIdx >= 0 ? plan.fills[stops[fillIdx]] : null;
     const layN = Math.max(0, Number(stays[vId]) || 0);
     const w = wx.byId[vId];
+    let kAt = 0;
+    segs.forEach((s, i) => { if (i < v && s.t !== "y") kAt += s.km; });
     const scrollToGuide = () => {
       setOpenIdx(v);
       if (typeof document !== "undefined") {
@@ -3065,7 +3408,7 @@ export default function JourneyPro() {
       }
     };
     return (
-      <div className="jp-card p-5 jp-travelcard">
+      <div className="jp-card p-5 jp-travelcard jp-sec-travel">
         <div className="flex items-center justify-between gap-2 mb-2">
           <span className="jp-eyebrow">🚐 Travel Mode</span>
           <span className="jp-chip jp-mono">Day {dayN} of ~{plan.days}</span>
@@ -3075,6 +3418,18 @@ export default function JourneyPro() {
           <>
             <p className="jp-travelbig">Trip complete — {NODES[stops[maxIdx]].n} 🎉</p>
             <p className="jp-note mb-2">{fmt(kmTotal)} km towed. Go on, tell the group.</p>
+            {(() => {
+              const logs = fillLog.filter((f) => f.trip === travel.startedISO);
+              if (!logs.length) return null;
+              const spent = logs.reduce((a, f) => a + f.$, 0);
+              const plannedFuel = Math.round(Object.values(plan.fills).reduce((a, f) => a + (f.cost || 0), 0));
+              return (
+                <p className="jp-note mb-2">
+                  ⛽ Fuel actually paid: <strong>${fmt(Math.round(spent))}</strong> — the plan said
+                  {" "}${fmt(plannedFuel)}. {spent <= plannedFuel ? "Under budget. Shout yourself the bakery." : "Over — the road always gets a say."}
+                </p>
+              );
+            })()}
           </>
         ) : (
           <>
@@ -3135,6 +3490,77 @@ export default function JourneyPro() {
                 <>⛽ No more fill-ups needed from here.</>
               )}
             </p>
+            <div className="jp-fillbox mb-2">
+              {!logOpen ? (
+                <button type="button" className="jp-preset"
+                        onClick={() => {
+                          setLogL(fillHere ? String(Math.round(fillHere.litres)) : "");
+                          setLogD(fillHere && fillHere.cost ? String(Math.round(fillHere.cost)) : "");
+                          setLogOpen(true);
+                        }}>
+                  ⛽ Log a fill-up at {NODES[vId].n}
+                </button>
+              ) : (
+                <span className="flex flex-wrap items-center gap-2">
+                  <input type="number" className="jp-field jp-mono jp-fillin" min="1" step="0.1"
+                         placeholder="litres" aria-label="Litres filled"
+                         value={logL} onChange={(e) => setLogL(e.target.value)} />
+                  <span className="jp-note">L for $</span>
+                  <input type="number" className="jp-field jp-mono jp-fillin" min="1" step="1"
+                         placeholder="total" aria-label="Total dollars paid"
+                         value={logD} onChange={(e) => setLogD(e.target.value)} />
+                  <button type="button" className="jp-load" onClick={() => addFill(vId, kAt)}>Save</button>
+                  <button type="button" className="jp-preset" onClick={() => setLogOpen(false)}>Cancel</button>
+                </span>
+              )}
+              {(() => {
+                const logs = fillLog.filter((f) => f.trip === travel.startedISO).sort((a, b) => a.k - b.k);
+                if (!logs.length) return null;
+                const last = logs[logs.length - 1];
+                const paidRate = last.L > 0 ? last.$ / last.L : 0;
+                const estRate = price + (NODES[last.id] ? NODES[last.id].d : 0);
+                let consLine = null;
+                if (logs.length >= 2) {
+                  const kmSpan = logs[logs.length - 1].k - logs[0].k;
+                  const litresUsed = logs.slice(1).reduce((a, f) => a + f.L, 0);
+                  if (kmSpan > 30 && litresUsed > 0) {
+                    const cons = (litresUsed / kmSpan) * 100;
+                    const est = vehicle.real * load.factor;
+                    consLine = (
+                      <p className="jp-note mt-2 mb-1">
+                        📈 Real consumption this trip: <strong>{cons.toFixed(1)} L/100 hitched</strong>
+                        {" "}(my estimate: {est.toFixed(1)}).{" "}
+                        {Math.abs(cons - est) <= est * 0.08
+                          ? "Bang on."
+                          : cons > est
+                            ? "Thirstier than planned — wind, hills or a heavy right foot."
+                            : "Better than planned — nice driving."}
+                      </p>
+                    );
+                  }
+                }
+                const spent = logs.reduce((a, f) => a + f.$, 0);
+                return (
+                  <>
+                    {consLine}
+                    <p className="jp-note mt-2 mb-1">
+                      Last fill: {NODES[last.id] ? NODES[last.id].n : "?"} — {last.L} L at
+                      {" "}${paidRate.toFixed(2)}/L (I estimated ${estRate.toFixed(2)}) ·
+                      trip fuel so far <strong>${fmt(Math.round(spent))}</strong>.
+                    </p>
+                    <span className="flex flex-wrap gap-2">
+                      {logs.slice(-3).map((f) => (
+                        <span key={f.trip + "-" + f.k + "-" + f.d} className="jp-chip jp-mono">
+                          {NODES[f.id] ? NODES[f.id].n : "?"} {f.L} L
+                          <button type="button" className="jp-fillx" aria-label="Remove this fill"
+                                  onClick={() => removeFill(f)}>×</button>
+                        </span>
+                      ))}
+                    </span>
+                  </>
+                );
+              })()}
+            </div>
           </>
         )}
 
@@ -3182,7 +3608,7 @@ export default function JourneyPro() {
   })() : null;
 
   return (
-    <div className="jp-root min-h-screen w-full">
+    <div className="jp-root min-h-screen w-full" data-tab={tab}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
         .jp-root {
@@ -3373,6 +3799,43 @@ export default function JourneyPro() {
         .jp-chipbtn { cursor: pointer; background: var(--paper); }
         .jp-livefuel { background: #EAF3EF; border: 1.5px solid var(--sign); border-radius: 10px;
           padding: 0.4rem 0.6rem; font-size: 0.85rem; margin: 0.35rem 0; }
+        .jp-towrow { display: flex; gap: 0.5rem; align-items: flex-start; margin: 0 0 0.45rem;
+          font-size: 0.88rem; }
+        .jp-towglyph { font-weight: 800; width: 1.1rem; flex: none; text-align: center; }
+        .jp-fillbox { background: #FFF8E6; border: 1.5px dashed var(--amber); border-radius: 10px;
+          padding: 0.5rem 0.6rem; }
+        .jp-fillin { width: 5.6rem; padding: 0.3rem 0.5rem; }
+        .jp-fillx { margin-left: 0.35rem; border: 0; background: none; color: var(--red);
+          font-weight: 800; cursor: pointer; font-size: 0.85rem; }
+        .jp-fillx:focus-visible { outline: 2px solid var(--red); border-radius: 4px; }
+        .jp-sharedbanner { border: 2px solid var(--amber); background: #FFF8E6; }
+        .jp-offline { background: var(--amber); color: var(--ink); border-bottom: 2px solid var(--ink);
+          padding: 0.5rem 0.9rem; text-align: center; font-weight: 600; font-size: 0.85rem; }
+        .jp-tabbar { display: none; }
+        .jp-mobileonly { display: none; }
+        @media (max-width: 900px) {
+          .jp-root { padding-bottom: 4.9rem; }
+          .jp-tabbar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
+            display: flex; background: #FFFFFF; border-top: 2px solid var(--ink);
+            box-shadow: 0 -4px 14px rgba(33,38,42,0.08);
+            padding: 0.3rem 0.2rem calc(0.3rem + env(safe-area-inset-bottom, 0px)); }
+          .jp-tabbtn { flex: 1; background: none; border: 0; cursor: pointer;
+            font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.8rem;
+            letter-spacing: 0.02em; color: var(--muted);
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+            padding: 0.3rem 0; min-height: 52px; }
+          .jp-tabbtn .jp-tabicon { font-size: 1.35rem; line-height: 1; }
+          .jp-tabbtn[data-on="true"] { color: var(--sign); }
+          .jp-tabbtn:focus-visible { outline: 3px solid var(--amber); border-radius: 10px; }
+          /* one page at a time on the phone */
+          .jp-sec-rig, .jp-sec-plan, .jp-sec-trip, .jp-sec-travel, .jp-sec-mymap { display: none; }
+          [data-tab="rig"] .jp-sec-rig { display: block; }
+          [data-tab="plan"] .jp-sec-plan { display: block; }
+          [data-tab="trip"] .jp-sec-trip { display: block; }
+          [data-tab="travel"] .jp-sec-travel { display: block; }
+          [data-tab="travel"] .jp-mobileonly { display: block; }
+          [data-tab="mymap"] .jp-sec-mymap { display: block; }
+        }
       `}</style>
 
       <header className="max-w-6xl mx-auto px-4 pt-8 pb-2">
@@ -3390,14 +3853,20 @@ export default function JourneyPro() {
           </div>
           <span className="jp-display text-sm font-semibold tracking-widest uppercase px-3 py-1 rounded-md"
                 style={{ background: "var(--amber)", color: "var(--ink)" }}>
-            Prototype v0.24
+            Prototype v0.30
           </span>
         </div>
       </header>
 
+      {offline && (
+        <div className="jp-offline" role="status">
+          📡 Offline — your plans, guides and trip keep working. Live prices, weather and fresh
+          map tiles return with reception.
+        </div>
+      )}
       <main className="jp-main max-w-6xl mx-auto px-4 py-6">
         <section className="flex flex-col gap-5">
-          <div className="jp-card p-5">
+          <div className="jp-card p-5 jp-sec-rig">
             <div className="flex items-center gap-2 mb-3">
               <Caravan size={18} style={{ color: "var(--sign)" }} aria-hidden />
               <span className="jp-eyebrow">Your tow vehicle</span>
@@ -3469,6 +3938,24 @@ export default function JourneyPro() {
                     <input id="cvw" type="number" min="0" step="100" className="jp-field jp-mono" value={customVeh.tow}
                            onChange={(e) => setCustomVeh({ ...customVeh, tow: e.target.value })} />
                   </div>
+                  <div>
+                    <label className="jp-lab" htmlFor="cvb">Ball limit kg <span className="jp-note">(optional)</span></label>
+                    <input id="cvb" type="number" min="0" step="10" className="jp-field jp-mono" value={customVeh.ball}
+                           placeholder="e.g. 350"
+                           onChange={(e) => setCustomVeh({ ...customVeh, ball: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="jp-lab" htmlFor="cvk">Kerb weight kg <span className="jp-note">(optional)</span></label>
+                    <input id="cvk" type="number" min="0" step="10" className="jp-field jp-mono" value={customVeh.kerb}
+                           placeholder="e.g. 2350"
+                           onChange={(e) => setCustomVeh({ ...customVeh, kerb: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="jp-lab" htmlFor="cvg">GVM kg <span className="jp-note">(optional)</span></label>
+                    <input id="cvg" type="number" min="0" step="10" className="jp-field jp-mono" value={customVeh.gvm}
+                           placeholder="e.g. 3350"
+                           onChange={(e) => setCustomVeh({ ...customVeh, gvm: e.target.value })} />
+                  </div>
                 </div>
                 <p className="jp-note">Tip: your trip computer&rsquo;s long-term average is the honest number to use.</p>
               </div>
@@ -3482,7 +3969,7 @@ export default function JourneyPro() {
             </div>
           </div>
 
-          <div className="jp-card p-5">
+          <div className="jp-card p-5 jp-sec-rig">
             <div className="flex items-center gap-2 mb-3">
               <Caravan size={18} style={{ color: "var(--sign)" }} aria-hidden />
               <span className="jp-eyebrow">On the back</span>
@@ -3618,7 +4105,74 @@ export default function JourneyPro() {
             )}
           </div>
 
-          <div className="jp-card p-5">
+          {load.weight > 0 && (() => {
+            const ballEst = Math.round(load.weight * 0.10);
+            const rows = [];
+            /* A — towed weight vs braked limit */
+            rows.push(load.weight > vehicle.tow
+              ? { s: "bad", t: <>Towed weight ~{fmt(load.weight)} kg is <strong>over</strong> the {fmt(vehicle.tow)} kg braked limit.</> }
+              : load.weight > vehicle.tow * 0.95
+                ? { s: "warn", t: <>Towed weight ~{fmt(load.weight)} kg is within {fmt(vehicle.tow)} kg — but only just. No margin for the firewood.</> }
+                : { s: "ok", t: <>Towed weight ~{fmt(load.weight)} kg sits under the {fmt(vehicle.tow)} kg braked limit.</> });
+            /* B — towball estimate vs ball limit */
+            if (vehicle.ball) {
+              rows.push(ballEst > vehicle.ball
+                ? { s: "bad", t: <>Estimated ball weight ~{ballEst} kg (10%) <strong>exceeds</strong> this vehicle&rsquo;s {vehicle.ball} kg towball limit.</> }
+                : ballEst > vehicle.ball * 0.9
+                  ? { s: "warn", t: <>Estimated ball weight ~{ballEst} kg is right at this vehicle&rsquo;s {vehicle.ball} kg towball limit — load the van nose-light and verify with a ball scale.</> }
+                  : { s: "ok", t: <>Estimated ball weight ~{ballEst} kg fits the {vehicle.ball} kg towball limit.</> });
+            } else {
+              rows.push({ s: "info", t: <>Estimated ball weight ~{ballEst} kg (10% rule). This vehicle&rsquo;s ball limit isn&rsquo;t in my data — check the towbar plate or handbook (utes are typically 350 kg; SUVs can be as low as 100–250 kg).</> });
+            }
+            /* C — van vs tug stability */
+            if (vehicle.kerb) {
+              rows.push(load.weight > vehicle.kerb
+                ? { s: "warn", t: <>The loaded van (~{fmt(load.weight)} kg) outweighs the tug (~{fmt(vehicle.kerb)} kg kerb). Legal in most cases, but it demands respect: correct ball weight, electronic sway control, and consider a weight-distribution hitch.</> }
+                : { s: "ok", t: <>The tug (~{fmt(vehicle.kerb)} kg kerb) outweighs the van — the stable way around.</> });
+            }
+            /* D — GVM payload window */
+            if (vehicle.gvm && vehicle.kerb) {
+              const window_ = vehicle.gvm - vehicle.kerb;
+              const afterBall = window_ - ballEst;
+              rows.push(afterBall < 150
+                ? { s: "bad", t: <>GVM payload window is {fmt(window_)} kg; ball weight uses ~{ballEst} kg, leaving <strong>~{fmt(afterBall)} kg</strong> for people, gear, water and accessories — very likely over GVM once loaded. A GVM upgrade or lighter van may be needed.</> }
+                : afterBall < 400
+                  ? { s: "warn", t: <>GVM payload window is {fmt(window_)} kg; ball weight uses ~{ballEst} kg, leaving ~{fmt(afterBall)} kg for people, gear, water and accessories. Tight — pack like a minimalist and weigh it.</> }
+                  : { s: "ok", t: <>GVM payload window is {fmt(window_)} kg; after ~{ballEst} kg of ball weight there&rsquo;s ~{fmt(afterBall)} kg for people, gear and water.</> });
+            }
+            const worst = rows.some((r) => r.s === "bad") ? "bad" : rows.some((r) => r.s === "warn") ? "warn" : "ok";
+            const glyph = { ok: "✓", warn: "⚠", bad: "✗", info: "ℹ" };
+            const col = { ok: "var(--sign)", warn: "#8a6d00", bad: "var(--red)", info: "var(--muted)" };
+            return (
+              <div className="jp-card p-5 jp-sec-rig">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="jp-eyebrow">🛟 Safe Tow Check</span>
+                  <span className="jp-chip" style={{
+                    background: worst === "ok" ? "var(--sign)" : worst === "warn" ? "var(--amber)" : "var(--red)",
+                    color: worst === "warn" ? "var(--ink)" : "#fff",
+                    borderColor: "var(--ink)", fontWeight: 700 }}>
+                    {worst === "ok" ? "Looking good" : worst === "warn" ? "Check the details" : "Not safe as set up"}
+                  </span>
+                </div>
+                {rows.map((r, i) => (
+                  <p key={i} className="jp-towrow">
+                    <span className="jp-towglyph" style={{ color: col[r.s] }} aria-hidden>{glyph[r.s]}</span>
+                    <span>{r.t}</span>
+                  </p>
+                ))}
+                {vehMode === "custom" && (!vehicle.ball || !vehicle.kerb || !vehicle.gvm) && (
+                  <p className="jp-note mt-2">Custom rig? Add ball limit, kerb weight and GVM in the vehicle card for the full check.</p>
+                )}
+                <p className="jp-note mt-2">
+                  Guide only, based on standard-model specs — your compliance plates rule, options change weights,
+                  and GCM isn&rsquo;t checked yet. The only numbers that truly count come off a
+                  {" "}<strong>weighbridge with the rig loaded</strong>. Ball weight here is the 10% rule of thumb.
+                </p>
+              </div>
+            );
+          })()}
+
+          <div className="jp-card p-5 jp-sec-plan jp-sec-plan">
             <div className="flex items-center gap-2 mb-3">
               <Route size={18} style={{ color: "var(--sign)" }} aria-hidden />
               <span className="jp-eyebrow">Build your trip</span>
@@ -3698,7 +4252,7 @@ export default function JourneyPro() {
 
           <TripIdeas onLoad={loadSuggested} />
 
-          <div className="jp-card p-5">
+          <div className="jp-card p-5 jp-sec-trip">
             <div className="flex items-center gap-2 mb-3">
               <Fuel size={18} style={{ color: "var(--sign)" }} aria-hidden />
               <span className="jp-eyebrow">Trip budget</span>
@@ -3743,7 +4297,33 @@ export default function JourneyPro() {
         </section>
 
         <section className="flex flex-col gap-4">
+          {sharedIn && (
+            <div className="jp-card p-5 jp-sec-trip jp-sharedbanner">
+              <div className="flex items-start justify-between gap-2">
+                <p className="jp-note" style={{ fontSize: "0.9rem" }}>
+                  📬 <strong>Someone sent you this trip:</strong> {NODES[sharedIn.a].n}
+                  {sharedIn.a === sharedIn.b ? " loop" : " → " + NODES[sharedIn.b].n} · {sharedIn.n} waypoints.
+                  Every cost below is calculated for <strong>your</strong> rig — set yours on the
+                  {" "}<strong>Rig</strong> page and watch the numbers change.
+                </p>
+                <button type="button" className="jp-preset" aria-label="Dismiss"
+                        onClick={() => setSharedIn(null)}>✕</button>
+              </div>
+            </div>
+          )}
+
           {travelCard}
+          {!travel && (
+            <div className="jp-card p-5 jp-mobileonly">
+              <span className="jp-eyebrow">🚐 Travel Mode</span>
+              <p className="jp-note mt-2">
+                This page becomes your on-road companion — next stop, next fill-up, live prices,
+                the fill-up logger and road reports. Build a trip on the <strong>Plan</strong> page,
+                then press <strong>Start this trip</strong> on the <strong>Trip</strong> page and
+                Travel Mode lives here.
+              </p>
+            </div>
+          )}
 
           {story && (
             <div className="jp-modal" role="dialog" aria-modal="true" aria-label="Your trip card"
@@ -3773,7 +4353,7 @@ export default function JourneyPro() {
             </div>
           )}
 
-          <div className="jp-sign p-6 md:p-8">
+          <div className="jp-sign p-6 md:p-8 jp-sec-trip">
             <p className="jp-display uppercase tracking-widest text-sm font-semibold"
                style={{ color: "rgba(255,255,255,0.75)" }}>
               Trip sheet{waypoints.length > 0 ? " · " + NODES[startId].n + " → " + NODES[endId].n : ""}
@@ -3877,6 +4457,11 @@ export default function JourneyPro() {
                 {storyBusy ? "Building your card…" : "📸 Share this trip"}
               </button>
             )}
+            {route.segs.length > 0 && (
+              <button type="button" className="jp-sharebtn" onClick={shareTripLink}>
+                {linkCopied ? "✓ Link copied — paste it anywhere" : "🔗 Send this trip to someone"}
+              </button>
+            )}
           </div>
 
           <RouteMap route={route} waypoints={waypoints} fills={plan.fills}
@@ -3884,7 +4469,7 @@ export default function JourneyPro() {
                     visited={visited} onToggleVisited={toggleVisited} />
 
           {route.segs.length > 0 && (
-            <div className="jp-card p-5">
+            <div className="jp-card p-5 jp-sec-trip">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <span className="jp-eyebrow">Leg sheet &amp; fill plan</span>
                 <span className="jp-chip">~{fmt(plan.avgCons, 1)} L/100km as configured</span>
@@ -4225,7 +4810,7 @@ export default function JourneyPro() {
             {" "}{Object.keys(NODES).length} stop guides. Live weather by Open-Meteo · map &copy; OpenStreetMap. Missing yours? Tell us and it goes in.
           </p>
 
-          <div className="jp-card p-5">
+          <div className="jp-card p-5 jp-sec-mymap">
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="jp-eyebrow">🗺️ My Australia</span>
               <span className="jp-chip jp-mono">
@@ -4281,6 +4866,22 @@ export default function JourneyPro() {
           </div>
 
         </section>
+        <nav className="jp-tabbar" aria-label="App sections">
+          {[
+            ["rig", "🚙", "Rig"],
+            ["plan", "🗺️", "Plan"],
+            ["trip", "🧾", "Trip"],
+            ["travel", "🚐", "Travel"],
+            ["mymap", "🏆", "My Map"],
+          ].map(([id, icon, label]) => (
+            <button key={id} type="button" className="jp-tabbtn" data-on={tab === id}
+                    aria-current={tab === id ? "page" : undefined}
+                    onClick={() => { setTab(id); if (typeof window !== "undefined") window.scrollTo({ top: 0 }); }}>
+              <span className="jp-tabicon" aria-hidden>{icon}</span>
+              {label}
+            </button>
+          ))}
+        </nav>
       </main>
     </div>
   );
