@@ -14,7 +14,7 @@
            API, then add the key/secret in Vercel → redeploy).
    · Other states -> { ok:false, error:"coming-soon" }.
 
-   Zero npm dependencies.
+   Zero npm dependencies. ES module (matches the project's \"type\": \"module\").
    ============================================================ */
 
 const WA_PRODUCT = { diesel: 4, u91: 1, p95: 2 };
@@ -106,7 +106,7 @@ async function fetchNSW(town, fuel, state) {
   return s ? { ...s, src: "FuelCheck " + state } : null;
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "GET") return res.status(405).json({ ok: false, error: "method" });
@@ -148,7 +148,6 @@ module.exports = async (req, res) => {
     res.setHeader("Cache-Control", "s-maxage=120");
     return res.status(200).json({ ok: false, error: "upstream", state });
   }
-};
+}
 
-module.exports.parseFuelwatchRSS = parseFuelwatchRSS;
-module.exports.summarise = summarise;
+export { parseFuelwatchRSS, summarise };
